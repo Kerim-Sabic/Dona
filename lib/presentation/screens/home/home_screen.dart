@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppStrings.news,
                           color: AppColors.info,
                           onTap: () {
-                            // TODO: Navigate to news
+                            Navigator.pushNamed(context, '/news');
                           },
                         ),
                         QuickActionCard(
@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppStrings.weather,
                           color: AppColors.accentYellow,
                           onTap: () {
-                            // TODO: Navigate to weather
+                            Navigator.pushNamed(context, '/weather');
                           },
                         ),
                         QuickActionCard(
@@ -112,7 +112,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppStrings.calendar,
                           color: AppColors.secondary,
                           onTap: () {
-                            // TODO: Navigate to calendar
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Calendar integration coming soon!'),
+                              ),
+                            );
                           },
                         ),
                         QuickActionCard(
@@ -120,7 +124,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppStrings.foodOrdering,
                           color: AppColors.accent,
                           onTap: () {
-                            // TODO: Navigate to food ordering
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Food ordering coming soon!'),
+                              ),
+                            );
                           },
                         ),
                       ],

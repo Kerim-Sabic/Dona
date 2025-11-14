@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../services/ai/ai_service.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/voice_input_button.dart';
 
@@ -15,6 +16,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  final AIService _aiService = AIService.instance;
   bool _isListening = false;
   bool _isProcessing = false;
 
@@ -25,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage(String text) {
+  void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
     setState(() {
@@ -40,13 +42,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _scrollToBottom();
 
-    // TODO: Send to AI service and get response
-    // Simulate AI response for now
-    Future.delayed(const Duration(seconds: 1), () {
+    // Send to AI service and get response
+    try {
+      final response = await _aiService.chat(text);
+
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(
-            text: 'I understand. How can I help you with that?',
+            text: response,
             isUser: false,
             timestamp: DateTime.now(),
           ));
@@ -54,7 +57,19 @@ class _ChatScreenState extends State<ChatScreen> {
         });
         _scrollToBottom();
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: 'Sorry, I encountered an error. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
+          _isProcessing = false;
+        });
+        _scrollToBottom();
+      }
+    }
   }
 
   void _scrollToBottom() {

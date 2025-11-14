@@ -6,6 +6,8 @@ import 'presentation/screens/home/home_screen.dart';
 import 'presentation/screens/chat/chat_screen.dart';
 import 'presentation/screens/settings/settings_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
+import 'presentation/screens/news/news_screen.dart';
+import 'presentation/screens/weather/weather_screen.dart';
 
 class DonaAIApp extends StatelessWidget {
   const DonaAIApp({super.key});
@@ -36,6 +38,8 @@ class DonaAIApp extends StatelessWidget {
         '/chat': (context) => const ChatScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/onboarding': (context) => const OnboardingScreen(),
+        '/news': (context) => const NewsScreen(),
+        '/weather': (context) => const WeatherScreen(),
       },
 
       debugShowCheckedModeBanner: false,
