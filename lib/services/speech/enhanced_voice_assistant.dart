@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../core/utils/logger.dart';
 import '../ai/ai_service.dart';
 import '../ai/intent_recognition.dart';
 import '../../data/user_profile.dart';
+import '../personality/donna_personality.dart';
 
 /// Enhanced Voice Assistant with conversation memory and context
 class EnhancedVoiceAssistant {
@@ -12,11 +15,17 @@ class EnhancedVoiceAssistant {
 
   EnhancedVoiceAssistant._internal();
 
+  // Speech recognition and TTS
+  late stt.SpeechToText _speech;
+  late FlutterTts _tts;
+  bool _speechInitialized = false;
+  bool _ttsInitialized = false;
+
   // Conversation state
   final ConversationContext _context = ConversationContext();
   bool _isListening = false;
   bool _isSpeaking = false;
-  String? _currentTranscription;
+  String _currentTranscription = '';
 
   // Callbacks
   Function(String)? onTranscriptionUpdate;
@@ -27,7 +36,32 @@ class EnhancedVoiceAssistant {
   /// Initialize voice assistant
   Future<void> init() async {
     try {
-      AppLogger.info('Enhanced Voice Assistant initialized');
+      // Initialize speech recognition
+      _speech = stt.SpeechToText();
+      _speechInitialized = await _speech.initialize(
+        onError: (error) => AppLogger.error('Speech error', error),
+        onStatus: (status) => AppLogger.debug('Speech status: $status'),
+      );
+
+      if (!_speechInitialized) {
+        AppLogger.error('Speech recognition not available');
+      }
+
+      // Initialize TTS
+      _tts = FlutterTts();
+      await _tts.setLanguage('en-US');
+      await _tts.setSpeechRate(0.5);
+      await _tts.setVolume(1.0);
+      await _tts.setPitch(1.0);
+
+      // Set voice (female voice on iOS)
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _tts.setVoice({"name": "Samantha", "locale": "en-US"});
+      }
+
+      _ttsInitialized = true;
+
+      AppLogger.info('Enhanced Voice Assistant initialized successfully');
     } catch (e, stackTrace) {
       AppLogger.error('Failed to initialize voice assistant', e, stackTrace);
     }
@@ -35,27 +69,63 @@ class EnhancedVoiceAssistant {
 
   /// Start listening for voice input
   Future<void> startListening() async {
-    if (_isListening) return;
+    if (_isListening || !_speechInitialized) return;
 
     _isListening = true;
+    _currentTranscription = '';
     _updateState(VoiceAssistantState.listening);
     AppLogger.info('Started listening');
 
-    // In production, integrate with speech_to_text package
-    // For now, simulating voice input
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          _currentTranscription = result.recognizedWords;
+
+          if (onTranscriptionUpdate != null) {
+            onTranscriptionUpdate!(_currentTranscription);
+          }
+
+          // If final result, process it
+          if (result.finalResult) {
+            stopListening();
+          }
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+        onSoundLevelChange: (level) {
+          if (onVolumeChange != null) {
+            onVolumeChange!(level);
+          }
+        },
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error starting speech recognition', e, stackTrace);
+      _isListening = false;
+      _updateState(VoiceAssistantState.idle);
+    }
   }
 
   /// Stop listening
   Future<void> stopListening() async {
     if (!_isListening) return;
 
-    _isListening = false;
-    _updateState(VoiceAssistantState.processing);
-    AppLogger.info('Stopped listening');
+    try {
+      await _speech.stop();
+      _isListening = false;
+      _updateState(VoiceAssistantState.processing);
+      AppLogger.info('Stopped listening');
 
-    // Process the transcription
-    if (_currentTranscription != null && _currentTranscription!.isNotEmpty) {
-      await _processVoiceCommand(_currentTranscription!);
+      // Process the transcription
+      if (_currentTranscription.isNotEmpty) {
+        await _processVoiceCommand(_currentTranscription);
+      } else {
+        _updateState(VoiceAssistantState.idle);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Error stopping speech recognition', e, stackTrace);
+      _isListening = false;
+      _updateState(VoiceAssistantState.idle);
     }
   }
 
@@ -179,17 +249,40 @@ Keep it brief (1-2 sentences) unless more detail is needed.
 
   /// Speak response (text-to-speech)
   Future<void> _speakResponse(String text) async {
+    if (!_ttsInitialized) {
+      AppLogger.warning('TTS not initialized');
+      _updateState(VoiceAssistantState.idle);
+      return;
+    }
+
     _isSpeaking = true;
     _updateState(VoiceAssistantState.speaking);
 
     AppLogger.debug('Speaking: $text');
 
-    // In production, integrate with flutter_tts
-    // Simulate speaking duration
-    await Future.delayed(Duration(milliseconds: text.length * 50));
+    try {
+      // Set completion callback
+      _tts.setCompletionHandler(() {
+        _isSpeaking = false;
+        _updateState(VoiceAssistantState.idle);
+      });
 
-    _isSpeaking = false;
-    _updateState(VoiceAssistantState.idle);
+      // Speak the text
+      await _tts.speak(text);
+    } catch (e, stackTrace) {
+      AppLogger.error('Error speaking', e, stackTrace);
+      _isSpeaking = false;
+      _updateState(VoiceAssistantState.idle);
+    }
+  }
+
+  /// Stop speaking
+  Future<void> stopSpeaking() async {
+    if (_isSpeaking && _ttsInitialized) {
+      await _tts.stop();
+      _isSpeaking = false;
+      _updateState(VoiceAssistantState.idle);
+    }
   }
 
   /// Update transcription as user speaks

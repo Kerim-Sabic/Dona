@@ -23,10 +23,28 @@ class CrossServiceWorkflows {
 
       // 1. Search related emails
       final emails = <EmailMessage>[];
-      if (meeting.attendees != null && meeting.attendees!.isNotEmpty) {
-        for (final attendee in meeting.attendees!) {
-          // Search Gmail for emails with this person
-          // In production: implement email search
+      if (GmailService.instance.isAuthenticated &&
+          meeting.attendees != null &&
+          meeting.attendees!.isNotEmpty) {
+        try {
+          // Get recent inbox messages
+          final allMessages = await GmailService.instance.getInboxMessages(maxResults: 50);
+
+          // Filter emails related to attendees or meeting topic
+          for (final email in allMessages) {
+            final isRelevant = meeting.attendees!.any((attendee) =>
+              email.from?.toLowerCase().contains(attendee.toLowerCase()) ?? false ||
+              email.to.any((to) => to.toLowerCase().contains(attendee.toLowerCase()))
+            ) || (email.subject.toLowerCase().contains(meeting.title.toLowerCase()));
+
+            if (isRelevant) {
+              emails.add(email);
+            }
+          }
+
+          AppLogger.info('Found ${emails.length} related emails');
+        } catch (e) {
+          AppLogger.error('Error searching emails', e);
         }
       }
 
@@ -58,9 +76,26 @@ class CrossServiceWorkflows {
   }
 
   Future<String> _getLastMeetingNotes(List<String> attendees) async {
-    // Search Drive for meeting notes with these attendees
-    // For now, return placeholder
-    return 'Previous meeting notes not found';
+    try {
+      if (!GoogleDriveService.instance.isAuthenticated || attendees.isEmpty) {
+        return 'Previous meeting notes not available';
+      }
+
+      // Search Drive for documents containing "meeting notes" and attendee names
+      final searchTerm = 'meeting notes ${attendees.first.split('@').first}';
+      final files = await GoogleDriveService.instance.searchFiles(searchTerm);
+
+      if (files.isNotEmpty) {
+        // Return most recent file name and link
+        final latestFile = files.first;
+        return 'Last meeting: ${latestFile.name} (${latestFile.modifiedTime?.toString() ?? "Unknown date"})';
+      }
+
+      return 'No previous meeting notes found';
+    } catch (e) {
+      AppLogger.error('Error getting last meeting notes', e);
+      return 'Could not retrieve previous meeting notes';
+    }
   }
 
   Future<String> _generateMeetingBrief({
@@ -119,13 +154,31 @@ Keep it concise and actionable.
       );
 
       // 4. Find nearby places (parking, restaurants)
-      final nearbyParking = <Place>[];
-      final nearbyRestaurants = <Place>[];
+      List<Place> nearbyParking = [];
+      List<Place> nearbyRestaurants = [];
 
-      if (route != null) {
-        // Search near destination
-        // nearbyParking = await GoogleMapsService.instance.searchNearbyPlaces(...);
-        // nearbyRestaurants = await GoogleMapsService.instance.searchNearbyPlaces(...);
+      if (route != null && route.endLocation != null) {
+        try {
+          // Search for parking near destination
+          nearbyParking = await GoogleMapsService.instance.searchNearbyPlaces(
+            latitude: route.endLocation!['lat'],
+            longitude: route.endLocation!['lng'],
+            type: 'parking',
+            radius: 500, // 500 meters
+          );
+
+          // Search for restaurants near destination
+          nearbyRestaurants = await GoogleMapsService.instance.searchNearbyPlaces(
+            latitude: route.endLocation!['lat'],
+            longitude: route.endLocation!['lng'],
+            type: 'restaurant',
+            radius: 500,
+          );
+
+          AppLogger.info('Found ${nearbyParking.length} parking spots and ${nearbyRestaurants.length} restaurants');
+        } catch (e) {
+          AppLogger.error('Error searching nearby places', e);
+        }
       }
 
       // 5. Generate recommendations
@@ -199,11 +252,21 @@ Keep it brief and helpful.
         DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59),
       );
 
-      // 2. Get unread emails (mock for now)
-      final unreadCount = 0; // await GmailService.instance.getUnreadCount();
+      // 2. Get unread emails
+      int unreadCount = 0;
+      if (GmailService.instance.isAuthenticated) {
+        try {
+          final messages = await GmailService.instance.getInboxMessages(maxResults: 100);
+          unreadCount = messages.where((m) => !(m.isRead ?? true)).length;
+        } catch (e) {
+          AppLogger.error('Error getting unread count', e);
+        }
+      }
 
-      // 3. Get pending tasks (mock for now)
-      final pendingTasks = 0;
+      // 3. Get pending tasks
+      int pendingTasks = 0;
+      // Note: Task counting would require Google Tasks API integration
+      // Placeholder for now - can be implemented when needed
 
       // 4. Get weather
       final weather = await WeatherService.instance.getCurrentWeather();

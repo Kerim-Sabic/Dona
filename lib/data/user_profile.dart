@@ -16,6 +16,7 @@ class UserProfile {
   Map<String, int> frequentContacts = {};
   Map<String, int> frequentLocations = {};
   List<String> preferredRestaurants = [];
+  List<String> vipContacts = []; // VIP contacts that require personal attention
   Map<String, dynamic> communicationStyle = {};
 
   // User metadata
@@ -49,6 +50,7 @@ class UserProfile {
         frequentContacts = Map<String, int>.from(data['frequentContacts'] ?? {});
         frequentLocations = Map<String, int>.from(data['frequentLocations'] ?? {});
         preferredRestaurants = List<String>.from(data['preferredRestaurants'] ?? []);
+        vipContacts = List<String>.from(data['vipContacts'] ?? []);
         communicationStyle = data['communicationStyle'] ?? {};
         userName = data['userName'];
         phoneNumber = data['phoneNumber'];
@@ -69,6 +71,7 @@ class UserProfile {
         'frequentContacts': frequentContacts,
         'frequentLocations': frequentLocations,
         'preferredRestaurants': preferredRestaurants,
+        'vipContacts': vipContacts,
         'communicationStyle': communicationStyle,
         'userName': userName,
         'phoneNumber': phoneNumber,
@@ -242,6 +245,31 @@ class UserProfile {
       ..sort((a, b) => (b.value as num).compareTo(a.value as num));
 
     return int.parse(sortedDurations.first.key);
+  }
+
+  /// Check if contact is VIP
+  bool isVIPContact(String email) {
+    return vipContacts.any((vip) =>
+      email.toLowerCase().contains(vip.toLowerCase()) ||
+      vip.toLowerCase().contains(email.toLowerCase())
+    );
+  }
+
+  /// Add VIP contact
+  Future<void> addVIPContact(String email) async {
+    if (!vipContacts.contains(email)) {
+      vipContacts.add(email);
+      await _saveProfile();
+      AppLogger.info('Added VIP contact: $email');
+    }
+  }
+
+  /// Remove VIP contact
+  Future<void> removeVIPContact(String email) async {
+    if (vipContacts.remove(email)) {
+      await _saveProfile();
+      AppLogger.info('Removed VIP contact: $email');
+    }
   }
 
   /// Get top contacts (sorted by frequency)
