@@ -112,11 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           title: AppStrings.calendar,
                           color: AppColors.secondary,
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Calendar integration coming soon!'),
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/calendar');
                           },
                         ),
                         QuickActionCard(

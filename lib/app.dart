@@ -8,6 +8,7 @@ import 'presentation/screens/settings/settings_screen.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
 import 'presentation/screens/news/news_screen.dart';
 import 'presentation/screens/weather/weather_screen.dart';
+import 'presentation/screens/calendar/calendar_screen.dart';
 
 class DonaAIApp extends StatelessWidget {
   const DonaAIApp({super.key});
@@ -40,6 +41,7 @@ class DonaAIApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/news': (context) => const NewsScreen(),
         '/weather': (context) => const WeatherScreen(),
+        '/calendar': (context) => const CalendarScreen(),
       },
 
       debugShowCheckedModeBanner: false,
