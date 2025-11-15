@@ -105,11 +105,30 @@ Your credentials are already configured! Just need to enable:
 
 ✅ **All API credentials are configured and ready!**
 
+### **Core Services:**
 - DeepSeek AI API
 - WorldNewsAPI
 - OpenWeatherMap
-- Google Cloud API (Speech, TTS, Maps)
-- Google Calendar OAuth 2.0 (Client ID + Secret)
+
+### **Google Cloud Services:**
+- Google Cloud API (Speech-to-Text, Text-to-Speech)
+- Google Calendar OAuth 2.0
+- Gmail API
+- Google Tasks API
+- Google Drive API
+
+### **Google Maps Services:**
+- Google Maps API (with the following enabled):
+  - Directions API
+  - Places API (New)
+  - Geocoding API
+  - Distance Matrix API
+  - Roads API
+  - Air Quality API
+  - Pollen API
+
+### **Communication Services:**
+- Twilio (Voice & SMS)
 
 **All keys are securely stored in:** `lib/config/api_keys.dart` (gitignored for security)
 
@@ -161,6 +180,12 @@ Your credentials are already configured! Just need to enable:
 | 📰 News | ✅ LIVE | Bosnia + International |
 | 🌤️ Weather | ✅ LIVE | Any city worldwide |
 | 📅 Calendar | ✅ MOCK | Real OAuth ready |
+| 📧 Gmail | ✅ Ready | OAuth integration ready |
+| ✅ Google Tasks | ✅ Ready | Full CRUD operations |
+| 📁 Google Drive | ✅ Ready | Upload/download/search |
+| 🗺️ Google Maps | ✅ Ready | Directions, Places, Geocoding |
+| 📱 Twilio SMS | ✅ Ready | Send/receive SMS |
+| ☎️ Twilio Calls | ✅ Ready | Voice calling |
 | 🗣️ Speech | 🔄 Ready | API configured |
 
 ---
@@ -190,12 +215,18 @@ flutter run
 Dona/
 ├── lib/
 │   ├── config/
-│   │   └── api_keys.dart          ✅ All credentials here
+│   │   ├── api_keys.dart.template  📄 Template for API keys
+│   │   └── api_keys.dart          ✅ All credentials here (gitignored)
 │   ├── services/
 │   │   ├── ai/                     ✅ DeepSeek integration
 │   │   ├── news/                   ✅ WorldNewsAPI
 │   │   ├── weather/                ✅ OpenWeatherMap
-│   │   └── calendar/               ✅ Google Calendar
+│   │   ├── calendar/               ✅ Google Calendar
+│   │   ├── gmail/                  ✅ Gmail API
+│   │   ├── google_tasks/           ✅ Google Tasks
+│   │   ├── google_drive/           ✅ Google Drive
+│   │   ├── google_maps/            ✅ Google Maps (Directions, Places, etc.)
+│   │   └── twilio/                 ✅ Twilio (SMS & Voice)
 │   └── presentation/screens/
 │       ├── chat/                   ✅ AI chat UI
 │       ├── news/                   ✅ News feed UI
@@ -212,20 +243,33 @@ Dona/
 
 Once everything works:
 
-1. **Add Speech:**
-   - Implement Google Cloud Speech-to-Text
-   - Add voice input to chat
-   - Bosnian language support
+1. **Enable Additional Google APIs:**
+   - Enable Gmail API in Google Cloud Console
+   - Enable Google Tasks API
+   - Enable Google Drive API
+   - Enable all Google Maps services (Directions, Places, etc.)
 
-2. **Enhance Calendar:**
+2. **Set up Twilio:**
+   - Verify your Twilio phone number
+   - Configure TwiML for voice calls
+   - Test SMS and voice functionality
+
+3. **Implement UI Screens:**
+   - Gmail inbox screen
+   - Google Tasks management screen
+   - Google Drive file browser
+   - Google Maps navigation screen
+   - Twilio SMS/call interface
+
+4. **Enhance Calendar:**
    - AI-powered event creation ("Schedule meeting tomorrow at 2pm")
    - Smart suggestions based on habits
    - Recurring events
 
-3. **Add More Features:**
+5. **Add More Features:**
    - Food ordering (Glovo/Donesi)
-   - Phone calls (Twilio)
-   - Navigation (Google Maps)
+   - Integration with Google Drive for file attachments
+   - Location-based reminders using Google Maps
 
 ---
 
