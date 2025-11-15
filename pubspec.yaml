@@ -65,6 +65,12 @@ dependencies:
   firebase_messaging: ^14.7.10
   flutter_local_notifications: ^16.3.2
 
+  # Connectivity & Offline
+  connectivity_plus: ^5.0.2
+
+  # Path handling (cross-platform)
+  path: ^1.8.3
+
   # Utilities
   uuid: ^4.3.3
   equatable: ^2.0.5
