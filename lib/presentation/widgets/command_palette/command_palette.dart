@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'command_models.dart';
@@ -34,6 +35,7 @@ class _CommandPaletteState extends State<CommandPalette> {
   final FocusNode _searchFocusNode = FocusNode();
   List<PaletteCommand> _filteredCommands = [];
   int _selectedIndex = 0;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -49,16 +51,23 @@ class _CommandPaletteState extends State<CommandPalette> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    setState(() {
-      final query = _searchController.text;
-      _filteredCommands = CommandRegistry.instance.search(query);
-      _selectedIndex = 0; // Reset selection on search
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Debounce search to avoid excessive filtering
+    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+      setState(() {
+        final query = _searchController.text;
+        _filteredCommands = CommandRegistry.instance.search(query);
+        _selectedIndex = 0; // Reset selection on search
+      });
     });
   }
 

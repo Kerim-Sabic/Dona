@@ -529,31 +529,69 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 
   Future<bool?> _showDangerDialog(String title, String message) {
+    final confirmController = TextEditingController();
+    bool canConfirm = false;
+
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(child: Text(title)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.warning, color: Colors.red),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              const SizedBox(height: 16),
+              const Text(
+                'Type DELETE to confirm:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                decoration: const InputDecoration(
+                  hintText: 'DELETE',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    canConfirm = value.trim().toUpperCase() == 'DELETE';
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                confirmController.dispose();
+                Navigator.of(context).pop(false);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: canConfirm
+                  ? () {
+                      confirmController.dispose();
+                      Navigator.of(context).pop(true);
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey,
+              ),
+              child: const Text('Reset Everything'),
+            ),
           ],
         ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Yes, Reset Everything'),
-          ),
-        ],
       ),
     );
   }
