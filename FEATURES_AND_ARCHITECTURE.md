@@ -53,10 +53,34 @@ lib/
 ├── config/                    # Configuration files
 │   └── api_keys_secure.dart   # Secure API configuration
 │
+├── assistant/                 # Next-Gen Personal OS (NEW)
+│   ├── assistant_brain.dart   # AI orchestration
+│   ├── persona_manager.dart   # Persona switching
+│   ├── persona_profiles.dart  # Persona definitions
+│   ├── prompts.dart           # Centralized prompts
+│   ├── context/               # Context Engine
+│   │   ├── context_engine.dart
+│   │   └── context_models.dart
+│   └── memory/                # Memory & User Model
+│       ├── memory_engine.dart
+│       └── user_model.dart
+│
+├── domain/                    # Domain layer (NEW)
+│   └── autopilot/             # Autopilot Framework
+│       ├── autopilot_engine.dart
+│       ├── autopilot_models.dart
+│       └── autopilots/        # Concrete implementations
+│           ├── plan_my_day_autopilot.dart
+│           └── study_autopilot.dart
+│
 ├── data/                      # Data layer
 │   └── models/                # Data models
 │       ├── student/           # Student-related models
-│       └── gamification/      # Gamification models
+│       ├── gamification/      # Gamification models
+│       └── memory/            # Memory models (NEW)
+│           ├── memory.dart
+│           ├── preference.dart
+│           └── routine.dart
 │
 ├── presentation/              # Presentation layer
 │   ├── screens/               # Screen components
@@ -67,7 +91,8 @@ lib/
 │   │   ├── weather/
 │   │   ├── settings/
 │   │   ├── onboarding/
-│   │   └── briefing/
+│   │   ├── briefing/
+│   │   └── command_center/    # Command Center (NEW)
 │   └── widgets/               # Reusable UI components
 │
 └── services/                  # Service layer (30 services)
@@ -551,6 +576,154 @@ lib/
   - Entity recognition
   - Context awareness
   - Multi-intent handling
+
+---
+
+### **12. Next-Gen Personal OS (NEW)**
+
+The Personal OS upgrade transforms Dona from a task-based assistant into an intelligent life operating system that learns, adapts, and autonomously manages your digital life.
+
+#### **12.1 Memory Engine**
+- **Service:** `MemoryEngine`
+- **Features:**
+  - Persistent SQLite database for long-term memory
+  - Stores facts, preferences, routines, and relationships
+  - Importance-based memory decay (0.95^days formula)
+  - Relevance scoring and top-N retrieval
+  - Automatic garbage collection of old memories
+  - Access count tracking and recency weighting
+  - Memory categories: fact, preference, routine, relationship, goal, habit, event
+  - Memory sources: user-told, observed, inferred, imported
+  - Statistics and analytics dashboard
+
+#### **12.2 User Model Service**
+- **Service:** `UserModelService`
+- **Features:**
+  - Aggregated user profile (name, timezone, locale, role)
+  - Key preferences extraction (top 20)
+  - Active routines tracking and detection
+  - Current persona integration
+  - User snapshot generation for AI context
+  - Learning from user actions (reinforcement)
+  - Preference recording (confidence-based)
+  - Routine event detection
+  - User mode inference (study-heavy, work-heavy, mixed)
+  - Role detection (student, professional, mixed)
+
+#### **12.3 Context Engine**
+- **Service:** `ContextEngine`
+- **Features:**
+  - LifeContext aggregation from multiple sources
+  - TimeContext (time of day, day of week, weekend detection)
+  - CalendarContext (today's events, current/next events)
+  - TaskContext (due tasks, pending items)
+  - StudentContext (upcoming exams, due assignments)
+  - EnvironmentContext (weather, location, home/work detection)
+  - UserSnapshot integration
+  - 5-minute caching for performance
+  - `getTodayContext()`, `getThisWeekContext()`, `getImportantNowContext()`
+  - Top priorities extraction with scoring
+  - Stress level calculation (0.0-1.0)
+  - Break recommendations when overloaded
+
+#### **12.4 Assistant Brain**
+- **Service:** `AssistantBrain`
+- **Features:**
+  - Persona-driven AI orchestration
+  - Context-aware response generation
+  - Streaming reply support
+  - Intent extraction from messages
+  - Contextual suggestion generation
+  - System prompt building with full context
+  - Fallback responses per persona
+  - Conversation history management
+
+#### **12.5 Persona Manager**
+- **Service:** `PersonaManager`
+- **Personas:**
+  - **Default Dona**: Witty, competent (wit: 0.8, formality: 0.6)
+  - **Professional Mode**: Formal, business-focused (wit: 0.2, formality: 0.9)
+  - **Study Coach**: Encouraging, educational (wit: 0.4, formality: 0.4)
+  - **Life Advisor**: Empathetic, caring (wit: 0.6, formality: 0.3)
+- **Features:**
+  - Runtime persona switching
+  - Persistent persona state
+  - Custom system prompts per persona
+  - Context injection into prompts
+
+#### **12.6 Command Center**
+- **Screen:** `CommandCenterScreen`
+- **Features:**
+  - Main hub for intelligent assistance
+  - Context-aware greeting personalized by time and user name
+  - Stress level warning when load is high
+  - "Dona Recommends" AI-powered suggestions
+  - Top 5 priorities with color-coded urgency
+  - Quick action cards for autopilot triggers
+  - Pull-to-refresh for real-time updates
+  - Glassmorphism design with smooth animations
+
+#### **12.7 Autopilot Framework**
+- **Service:** `AutopilotEngine`
+- **Models:**
+  - **AutopilotIntent**: User goal recognition
+  - **AutopilotPlan**: Complete execution plan with steps
+  - **AutopilotAction**: Individual actionable steps
+  - **AutopilotResult**: Execution results and summary
+- **Features:**
+  - Intent recognition from natural language
+  - AI-powered plan generation using AssistantBrain
+  - Simulation mode (preview actions before execution)
+  - Execution mode (actual action performance)
+  - Progress tracking with real-time callbacks
+  - Plan persistence and history
+  - Action types: create_event, create_task, send_email, send_sms, set_reminder, etc.
+  - User approval workflow
+  - Step-by-step execution with error handling
+
+#### **12.8 Plan My Day Autopilot**
+- **Implementation:** `PlanMyDayAutopilot`
+- **Features:**
+  - Context-aware day planning using ContextEngine
+  - Analyzes calendar events, tasks, and priorities
+  - Schedules focus time blocks (2hr) in optimal slots
+  - Adds break reminders if stress level is high
+  - Creates tasks for top 3 priorities
+  - Schedules study time for urgent exams
+  - Weather-based suggestions (umbrella reminders)
+  - Evening wind-down reminder
+  - Smart time slot finding (avoids conflicts)
+  - Morning review task generation
+
+#### **12.9 Study Autopilot**
+- **Implementation:** `StudyAutopilot`
+- **Features:**
+  - Determines what to study (exams, assignments, or review)
+  - Urgency-based prioritization (exam in 3 days = 0.95 priority)
+  - Pomodoro technique integration (25min work + 5min break)
+  - Creates structured study goals checklist
+  - Gathers study materials and resources
+  - Focus mode reminders (Do Not Disturb)
+  - Hydration and stretch reminders for long sessions
+  - Post-study review scheduling (24hr later)
+  - Supports multiple study techniques (Pomodoro, Time Blocking, Feynman, Spaced Repetition)
+  - Study target detection and tracking
+
+#### **12.10 Centralized Prompts**
+- **Service:** `DonaPrompts`
+- **Templates:**
+  - Intent extraction prompt
+  - Flashcard generation (text & topic-based)
+  - Quiz generation (multiple types)
+  - Document summarization
+  - Homework help
+  - Proactive suggestions
+  - Email drafting
+  - Meeting notes
+  - Relationship reminders
+  - Morning briefing
+  - News summarization
+  - Study tips
 
 ---
 
