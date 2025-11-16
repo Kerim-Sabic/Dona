@@ -1,0 +1,709 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/glassmorphism_theme.dart';
+import '../../../assistant/context/context_engine.dart';
+import '../../../assistant/context/context_models.dart';
+import '../../../assistant/assistant_brain.dart';
+import '../../../core/utils/logger.dart';
+
+/// Command Center - The main hub for Dona's intelligent assistance
+/// Shows context-aware recommendations, priorities, and autopilot actions
+class CommandCenterScreen extends StatefulWidget {
+  const CommandCenterScreen({Key? key}) : super(key: key);
+
+  @override
+  State<CommandCenterScreen> createState() => _CommandCenterScreenState();
+}
+
+class _CommandCenterScreenState extends State<CommandCenterScreen>
+    with SingleTickerProviderStateMixin {
+  bool _isLoading = true;
+  LifeContext? _context;
+  List<PriorityItem> _priorities = [];
+  List<Suggestion> _recommendations = [];
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _loadCommandCenter();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCommandCenter() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Load context and priorities in parallel
+      final results = await Future.wait([
+        ContextEngine.instance.getTodayContext(),
+        ContextEngine.instance.getTopPriorities(limit: 5),
+      ]);
+
+      _context = results[0] as LifeContext;
+      _priorities = results[1] as List<PriorityItem>;
+
+      // Generate AI recommendations based on context
+      await _generateRecommendations();
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to load Command Center', e, stackTrace);
+    }
+
+    setState(() => _isLoading = false);
+    _animationController.forward();
+  }
+
+  Future<void> _generateRecommendations() async {
+    try {
+      if (_context == null) return;
+
+      // Use AssistantBrain to generate contextual suggestions
+      final conversationContext = ConversationContext(
+        summary: _context!.toBriefSummary(),
+        timeOfDay: _context!.timeContext.timeOfDay,
+        location: _context!.environmentContext.currentLocation,
+      );
+
+      _recommendations = await AssistantBrain.instance.generateSuggestions(
+        context: conversationContext,
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to generate recommendations', e, stackTrace);
+      _recommendations = [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: AnimatedGradientBackground(
+        child: SafeArea(
+          child: _isLoading
+              ? _buildLoadingState()
+              : FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: _buildCommandCenterContent(),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PulseAnimation(
+            child: Icon(
+              Icons.dashboard_customize,
+              size: 80,
+              color: GlassmorphismTheme.primaryBlue,
+            ),
+          ),
+          SizedBox(height: 24),
+          Text(
+            'Loading your Command Center...',
+            style: GlassmorphismTheme.title2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommandCenterContent() {
+    if (_context == null) {
+      return _buildErrorState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadCommandCenter,
+      backgroundColor: GlassmorphismTheme.glassWhite,
+      color: GlassmorphismTheme.primaryBlue,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // Header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(GlassmorphismTheme.spacingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.dashboard_customize,
+                        color: GlassmorphismTheme.primaryBlue,
+                        size: 32,
+                      ),
+                      const SizedBox(width: GlassmorphismTheme.spacingM),
+                      Text(
+                        'Command Center',
+                        style: GlassmorphismTheme.heroTitle,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: GlassmorphismTheme.spacingS),
+
+                  // Context summary
+                  Text(
+                    _getContextGreeting(),
+                    style: GlassmorphismTheme.callout,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Stress indicator (if high)
+          if (_context!.stressLevel > 0.6)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: GlassmorphismTheme.spacingL,
+                ),
+                child: _buildStressWarning(),
+              ),
+            ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: GlassmorphismTheme.spacingL),
+          ),
+
+          // Dona Recommends Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: GlassmorphismTheme.spacingL,
+              ),
+              child: _buildDonaRecommendsSection(),
+            ),
+          ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: GlassmorphismTheme.spacingL),
+          ),
+
+          // Top Priorities
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: GlassmorphismTheme.spacingL,
+              ),
+              child: _buildPrioritiesSection(),
+            ),
+          ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: GlassmorphismTheme.spacingL),
+          ),
+
+          // Quick Actions (Autopilot triggers)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: GlassmorphismTheme.spacingL,
+              ),
+              child: _buildQuickActionsSection(),
+            ),
+          ),
+
+          const SliverToBoxAdapter(
+            child: SizedBox(height: GlassmorphismTheme.spacingXXL),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 80,
+            color: GlassmorphismTheme.errorRed,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Failed to load Command Center',
+            style: GlassmorphismTheme.title2,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadCommandCenter,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStressWarning() {
+    return GlassContainer(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFFF6B6B), Color(0xFFEE5A6F)],
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
+          const SizedBox(width: GlassmorphismTheme.spacingM),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'High Stress Detected',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _context!.shouldTakeBreak
+                      ? 'Your schedule is packed. Consider taking a break.'
+                      : 'You have a lot on your plate. Stay focused!',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonaRecommendsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              color: GlassmorphismTheme.accentOrange,
+              size: 24,
+            ),
+            const SizedBox(width: GlassmorphismTheme.spacingS),
+            Text(
+              'Dona Recommends',
+              style: GlassmorphismTheme.title2,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: GlassmorphismTheme.spacingM),
+
+        if (_recommendations.isEmpty)
+          GlassContainer(
+            child: const Text(
+              'No recommendations at the moment. You\'re all set!',
+              style: GlassmorphismTheme.body,
+            ),
+          )
+        else
+          ..._recommendations.map((rec) => Padding(
+                padding: const EdgeInsets.only(bottom: GlassmorphismTheme.spacingM),
+                child: _buildRecommendationCard(rec),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationCard(Suggestion recommendation) {
+    return GlassContainer(
+      gradient: recommendation.priority == SuggestionPriority.high
+          ? GlassmorphismTheme.primaryGradient
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (recommendation.priority == SuggestionPriority.high)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'HIGH PRIORITY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: GlassmorphismTheme.spacingS),
+          Text(
+            recommendation.text,
+            style: recommendation.priority == SuggestionPriority.high
+                ? GlassmorphismTheme.headline.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  )
+                : GlassmorphismTheme.headline,
+          ),
+          const SizedBox(height: GlassmorphismTheme.spacingS),
+          Text(
+            recommendation.reason,
+            style: recommendation.priority == SuggestionPriority.high
+                ? GlassmorphismTheme.subheadline.copyWith(color: Colors.white70)
+                : GlassmorphismTheme.subheadline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrioritiesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.flag,
+              color: GlassmorphismTheme.errorRed,
+              size: 24,
+            ),
+            const SizedBox(width: GlassmorphismTheme.spacingS),
+            Text(
+              'Top Priorities',
+              style: GlassmorphismTheme.title2,
+            ),
+            const Spacer(),
+            Text(
+              '${_priorities.length} items',
+              style: GlassmorphismTheme.callout,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: GlassmorphismTheme.spacingM),
+
+        if (_priorities.isEmpty)
+          GlassContainer(
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.celebration,
+                  color: GlassmorphismTheme.accentGreen,
+                ),
+                const SizedBox(width: GlassmorphismTheme.spacingM),
+                const Expanded(
+                  child: Text(
+                    'All clear! No urgent priorities right now.',
+                    style: GlassmorphismTheme.body,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._priorities.asMap().entries.map((entry) {
+            final index = entry.key;
+            final priority = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: GlassmorphismTheme.spacingM),
+              child: _buildPriorityCard(priority, index + 1),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildPriorityCard(PriorityItem priority, int rank) {
+    final priorityColor = _getPriorityColor(priority.priority);
+
+    return GlassContainer(
+      child: Row(
+        children: [
+          // Rank badge
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [priorityColor, priorityColor.withOpacity(0.7)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$rank',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: GlassmorphismTheme.spacingM),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  priority.title,
+                  style: GlassmorphismTheme.headline,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      _getTypeIcon(priority.type),
+                      size: 14,
+                      color: GlassmorphismTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDueDate(priority.dueDate),
+                      style: GlassmorphismTheme.caption1,
+                    ),
+                  ],
+                ),
+                if (priority.description != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    priority.description!,
+                    style: GlassmorphismTheme.caption1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.flash_on,
+              color: GlassmorphismTheme.accentYellow,
+              size: 24,
+            ),
+            const SizedBox(width: GlassmorphismTheme.spacingS),
+            Text(
+              'Quick Actions',
+              style: GlassmorphismTheme.title2,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: GlassmorphismTheme.spacingM),
+
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: GlassmorphismTheme.spacingM,
+          crossAxisSpacing: GlassmorphismTheme.spacingM,
+          childAspectRatio: 1.5,
+          children: [
+            _buildQuickActionCard(
+              icon: Icons.calendar_view_day,
+              title: 'Plan My Day',
+              gradient: GlassmorphismTheme.primaryGradient,
+              onTap: () {
+                // TODO: Trigger Plan My Day autopilot
+                _showComingSoon('Plan My Day');
+              },
+            ),
+            _buildQuickActionCard(
+              icon: Icons.school,
+              title: 'Study Session',
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              ),
+              onTap: () {
+                // TODO: Trigger Study Autopilot
+                _showComingSoon('Study Session');
+              },
+            ),
+            _buildQuickActionCard(
+              icon: Icons.fitness_center,
+              title: 'Focus Mode',
+              gradient: const LinearGradient(
+                colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
+              ),
+              onTap: () {
+                _showComingSoon('Focus Mode');
+              },
+            ),
+            _buildQuickActionCard(
+              icon: Icons.lightbulb,
+              title: 'Smart Suggest',
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
+              ),
+              onTap: () {
+                _showComingSoon('Smart Suggest');
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(GlassmorphismTheme.borderRadiusL),
+          boxShadow: GlassmorphismTheme.mediumShadow,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(GlassmorphismTheme.spacingM),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+                size: 32,
+              ),
+              const SizedBox(height: GlassmorphismTheme.spacingS),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper methods
+  String _getContextGreeting() {
+    final timeOfDay = _context?.timeContext.timeOfDay ?? 'day';
+    final userName = _context?.userSnapshot.profile.name;
+
+    final greeting = timeOfDay == 'morning'
+        ? 'Good morning'
+        : timeOfDay == 'afternoon'
+            ? 'Good afternoon'
+            : timeOfDay == 'evening'
+                ? 'Good evening'
+                : 'Good night';
+
+    if (userName != null) {
+      return '$greeting, $userName! Here\'s what matters today.';
+    }
+    return '$greeting! Here\'s what matters today.';
+  }
+
+  Color _getPriorityColor(double priority) {
+    if (priority >= 0.8) {
+      return GlassmorphismTheme.errorRed;
+    } else if (priority >= 0.6) {
+      return GlassmorphismTheme.accentOrange;
+    } else {
+      return GlassmorphismTheme.primaryBlue;
+    }
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type) {
+      case 'event':
+        return Icons.event;
+      case 'exam':
+        return Icons.school;
+      case 'assignment':
+        return Icons.assignment;
+      case 'task':
+        return Icons.check_circle;
+      default:
+        return Icons.circle;
+    }
+  }
+
+  String _formatDueDate(DateTime dueDate) {
+    final now = DateTime.now();
+    final diff = dueDate.difference(now);
+
+    if (diff.isNegative) {
+      return 'Overdue';
+    } else if (diff.inHours < 1) {
+      return 'In ${diff.inMinutes}m';
+    } else if (diff.inHours < 24) {
+      return 'In ${diff.inHours}h';
+    } else if (diff.inDays == 1) {
+      return 'Tomorrow';
+    } else if (diff.inDays < 7) {
+      return 'In ${diff.inDays} days';
+    } else {
+      return '${dueDate.month}/${dueDate.day}';
+    }
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature autopilot coming soon!'),
+        backgroundColor: GlassmorphismTheme.primaryBlue,
+      ),
+    );
+  }
+}
