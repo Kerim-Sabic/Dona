@@ -4,6 +4,8 @@ import '../../assistant/assistant_brain.dart';
 import '../../assistant/context/context_engine.dart';
 import '../../core/utils/logger.dart';
 import '../../services/storage/local_storage_service.dart';
+import 'history/autopilot_history_service.dart';
+import 'history/autopilot_history_entry.dart';
 
 /// Autopilot Engine - Core orchestrator for autonomous task execution
 ///
@@ -234,6 +236,9 @@ class AutopilotEngine {
       // Persist result
       await _persistResult(result);
 
+      // Record in history
+      await _recordHistory(plan, completedActions.length, failedActions.length);
+
       AppLogger.info('Plan execution completed: ${result.summary}');
       return result;
     } catch (e, stackTrace) {
@@ -253,6 +258,23 @@ class AutopilotEngine {
     );
 
     _activePlans[planId] = updatedPlan;
+
+    // Record cancellation in history
+    try {
+      final type = _mapPlanNameToAutopilotType(plan.planName);
+      if (type != null) {
+        await AutopilotHistoryService.instance.recordExecution(
+          type: type,
+          summary: plan.description,
+          totalActions: plan.actions.length,
+          executedActions: 0,
+          status: AutopilotHistoryStatus.cancelled,
+        );
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to record cancellation in history', e, stackTrace);
+    }
+
     AppLogger.info('Cancelled plan: ${plan.planName}');
   }
 
@@ -432,5 +454,66 @@ Format your response as a numbered list with clear action descriptions.
     } catch (e, stackTrace) {
       AppLogger.error('Failed to persist result', e, stackTrace);
     }
+  }
+
+  /// Record autopilot execution in history
+  Future<void> _recordHistory(
+    AutopilotPlan plan,
+    int executedCount,
+    int failedCount,
+  ) async {
+    try {
+      // Map plan name to autopilot type
+      final type = _mapPlanNameToAutopilotType(plan.planName);
+      if (type == null) {
+        AppLogger.warning('Could not map plan to autopilot type: ${plan.planName}');
+        return;
+      }
+
+      // Determine status
+      AutopilotHistoryStatus status;
+      if (failedCount == 0) {
+        status = AutopilotHistoryStatus.success;
+      } else if (executedCount > 0) {
+        status = AutopilotHistoryStatus.partial;
+      } else {
+        status = AutopilotHistoryStatus.failed;
+      }
+
+      // Record in history
+      await AutopilotHistoryService.instance.recordExecution(
+        type: type,
+        summary: plan.description,
+        totalActions: plan.actions.length,
+        executedActions: executedCount,
+        status: status,
+        errorMessage: failedCount > 0 ? '$failedCount action(s) failed' : null,
+      );
+
+      AppLogger.info('Recorded autopilot execution in history: ${type.displayName}');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to record autopilot history', e, stackTrace);
+    }
+  }
+
+  /// Map plan name to AutopilotType
+  AutopilotType? _mapPlanNameToAutopilotType(String planName) {
+    final lowerName = planName.toLowerCase();
+
+    if (lowerName.contains('plan my day') || lowerName.contains('plan day')) {
+      return AutopilotType.planMyDay;
+    } else if (lowerName.contains('study')) {
+      return AutopilotType.studyAutopilot;
+    } else if (lowerName.contains('weekly review') || lowerName.contains('review')) {
+      return AutopilotType.weeklyReview;
+    } else if (lowerName.contains('focus')) {
+      return AutopilotType.focusMode;
+    } else if (lowerName.contains('triage')) {
+      return AutopilotType.triage;
+    } else if (lowerName.contains('relationship')) {
+      return AutopilotType.relationship;
+    }
+
+    return null;
   }
 }
