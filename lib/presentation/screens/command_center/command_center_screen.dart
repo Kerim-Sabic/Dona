@@ -4,6 +4,9 @@ import '../../../assistant/context/context_engine.dart';
 import '../../../assistant/context/context_models.dart';
 import '../../../assistant/assistant_brain.dart';
 import '../../../core/utils/logger.dart';
+import '../../../domain/autopilot/autopilots/plan_my_day_autopilot.dart';
+import '../../../domain/autopilot/autopilots/study_autopilot.dart';
+import '../../../domain/autopilot/autopilot_models.dart';
 
 /// Command Center - The main hub for Dona's intelligent assistance
 /// Shows context-aware recommendations, priorities, and autopilot actions
@@ -552,10 +555,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
               icon: Icons.calendar_view_day,
               title: 'Plan My Day',
               gradient: GlassmorphismTheme.primaryGradient,
-              onTap: () {
-                // TODO: Trigger Plan My Day autopilot
-                _showComingSoon('Plan My Day');
-              },
+              onTap: () => _triggerPlanMyDayAutopilot(),
             ),
             _buildQuickActionCard(
               icon: Icons.school,
@@ -563,10 +563,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
               gradient: const LinearGradient(
                 colors: [Color(0xFF667eea), Color(0xFF764ba2)],
               ),
-              onTap: () {
-                // TODO: Trigger Study Autopilot
-                _showComingSoon('Study Session');
-              },
+              onTap: () => _triggerStudyAutopilot(),
             ),
             _buildQuickActionCard(
               icon: Icons.fitness_center,
@@ -695,6 +692,201 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
       return 'In ${diff.inDays} days';
     } else {
       return '${dueDate.month}/${dueDate.day}';
+    }
+  }
+
+  /// Trigger Plan My Day autopilot
+  Future<void> _triggerPlanMyDayAutopilot() async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await PlanMyDayAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview (approval screen)
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Plan My Day autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate plan. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Trigger Study Autopilot
+  Future<void> _triggerStudyAutopilot() async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await StudyAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview (approval screen)
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Study autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate study plan. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show autopilot plan preview (approval dialog)
+  void _showAutopilotPreview(AutopilotPlan plan) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: GlassmorphismTheme.primaryBlue),
+            const SizedBox(width: 8),
+            Expanded(child: Text(plan.planName)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                plan.description,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Actions:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...plan.actions.map((action) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${action.stepNumber}. ',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(
+                          child: Text(action.description),
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _executeAutopilot(plan);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GlassmorphismTheme.primaryBlue,
+            ),
+            child: const Text('Execute Plan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Execute the autopilot plan
+  Future<void> _executeAutopilot(AutopilotPlan plan) async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Executing ${plan.planName}...',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Execute plan (this will be replaced with actual execution later)
+      final result = await PlanMyDayAutopilot.instance.simulate(plan);
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.summary),
+            backgroundColor: result.success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Refresh context
+        _loadCommandCenter();
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to execute autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Execution failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
