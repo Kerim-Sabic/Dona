@@ -326,6 +326,7 @@ class AutopilotIntentType {
 class AutopilotActionType {
   static const String createEvent = 'create_event';
   static const String createTask = 'create_task';
+  static const String updateTask = 'update_task';
   static const String sendEmail = 'send_email';
   static const String sendSMS = 'send_sms';
   static const String makeCall = 'make_call';
