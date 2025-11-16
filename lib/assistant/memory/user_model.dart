@@ -16,12 +16,16 @@ class UserModelService {
   UserModelService._internal();
 
   static const String _profileKey = 'user_profile';
+  static const String _usageProfileKey = 'usage_profile';
   final _uuid = const Uuid();
+
+  UsageProfile _cachedUsageProfile = UsageProfile.mixed;
 
   /// Initialize user model service
   Future<void> init() async {
     try {
       await MemoryEngine.instance.init();
+      _cachedUsageProfile = await getUsageProfile();
       AppLogger.info('UserModelService initialized');
     } catch (e, stackTrace) {
       AppLogger.error('Failed to initialize UserModelService', e, stackTrace);
@@ -229,6 +233,37 @@ class UserModelService {
       return UserMode.mixed;
     }
   }
+
+  /// Get usage profile (determines which features are highlighted)
+  Future<UsageProfile> getUsageProfile() async {
+    try {
+      final stored = LocalStorageService.instance.getString(_usageProfileKey);
+      if (stored != null) {
+        return UsageProfile.values.firstWhere(
+          (e) => e.name == stored,
+          orElse: () => UsageProfile.mixed,
+        );
+      }
+      return _cachedUsageProfile;
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to get usage profile', e, stackTrace);
+      return UsageProfile.mixed;
+    }
+  }
+
+  /// Set usage profile
+  Future<void> setUsageProfile(UsageProfile profile) async {
+    try {
+      await LocalStorageService.instance.setString(_usageProfileKey, profile.name);
+      _cachedUsageProfile = profile;
+      AppLogger.info('Usage profile set to: ${profile.displayName}');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to set usage profile', e, stackTrace);
+    }
+  }
+
+  /// Get cached usage profile (synchronous, no await needed)
+  UsageProfile get currentUsageProfile => _cachedUsageProfile;
 }
 
 /// Complete user snapshot
@@ -317,6 +352,42 @@ enum UserRole {
   student,
   professional,
   mixed,
+}
+
+/// Usage profile - determines which features/autopilots are highlighted
+enum UsageProfile {
+  student,     // Highlights study features
+  founder,     // Highlights founder/executive features
+  professional, // Highlights work/productivity features
+  mixed,       // Balanced mix
+}
+
+extension UsageProfileExtension on UsageProfile {
+  String get displayName {
+    switch (this) {
+      case UsageProfile.student:
+        return 'Student';
+      case UsageProfile.founder:
+        return 'Founder / CEO';
+      case UsageProfile.professional:
+        return 'Professional';
+      case UsageProfile.mixed:
+        return 'Mixed';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case UsageProfile.student:
+        return 'Optimized for academic success with study tools and exam prep';
+      case UsageProfile.founder:
+        return 'Optimized for founders and executives with strategic planning and decision support';
+      case UsageProfile.professional:
+        return 'Optimized for professionals with productivity and task management';
+      case UsageProfile.mixed:
+        return 'Balanced experience with all features available';
+    }
+  }
 }
 
 /// User mode based on usage patterns

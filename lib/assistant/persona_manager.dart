@@ -125,6 +125,11 @@ class PersonaManager {
     return _currentPersona.id == PersonaProfiles.lifeAdvisor.id;
   }
 
+  /// Check if current persona is founder/CEO mode
+  bool get isFounderMode {
+    return _currentPersona.id == PersonaProfiles.founderMode.id;
+  }
+
   /// Get system prompt for current persona
   String getSystemPrompt() {
     return _currentPersona.systemPrompt;
