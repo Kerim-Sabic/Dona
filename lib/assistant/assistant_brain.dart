@@ -3,6 +3,8 @@ import 'persona_profiles.dart';
 import 'prompts.dart';
 import '../services/ai/ai_service.dart';
 import '../core/utils/logger.dart';
+import 'ai_router/ai_router.dart';
+import 'ai_router/ai_models.dart';
 
 /// The central brain of Dona that orchestrates AI responses
 /// with persona, context, and intelligent routing
@@ -44,15 +46,17 @@ class AssistantBrain {
         {'role': 'user', 'content': userMessage},
       ];
 
-      // Generate response using AI service
-      // Note: In future, this will use AiRouter for multi-model support
-      final response = await AIService.instance.chat(
-        userMessage,
-        context: conversationHistory,
+      // Generate response using AI Router (handles tier management & model selection)
+      final aiRequest = AiRequest(
+        prompt: userMessage,
+        context: AiUsageContext.chat,
+        conversationHistory: conversationHistory,
       );
 
-      AppLogger.debug('Generated reply with persona: ${persona.name}');
-      return response;
+      final aiResponse = await AiRouter.instance.send(aiRequest);
+
+      AppLogger.debug('Generated reply with persona: ${persona.name}, model: ${aiResponse.modelUsed.displayName}');
+      return aiResponse.content;
     } catch (e, stackTrace) {
       AppLogger.error('Failed to generate reply', e, stackTrace);
       return _getFallbackResponse();
