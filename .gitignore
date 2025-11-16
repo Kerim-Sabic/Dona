@@ -76,6 +76,7 @@ app.*.map.json
 # Environment & Secrets
 .env
 .env.local
+.env.production
 .env.*.local
 *.key
 *.pem
