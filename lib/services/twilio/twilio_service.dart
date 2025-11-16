@@ -30,9 +30,9 @@ class SmsMessage {
   factory SmsMessage.fromJson(Map<String, dynamic> json) {
     return SmsMessage(
       sid: json['sid'] as String?,
-      to: json['to'] as String,
+      to: (json['to'] as String?) ?? '',
       from: json['from'] as String?,
-      body: json['body'] as String,
+      body: (json['body'] as String?) ?? '',
       status: json['status'] as String?,
       dateSent: json['date_sent'] != null ? DateTime.parse(json['date_sent']) : null,
       dateCreated: json['date_created'] != null ? DateTime.parse(json['date_created']) : null,
@@ -71,7 +71,7 @@ class PhoneCall {
   factory PhoneCall.fromJson(Map<String, dynamic> json) {
     return PhoneCall(
       sid: json['sid'] as String?,
-      to: json['to'] as String,
+      to: (json['to'] as String?) ?? '',
       from: json['from'] as String?,
       status: json['status'] as String?,
       dateCreated: json['date_created'] != null ? DateTime.parse(json['date_created']) : null,

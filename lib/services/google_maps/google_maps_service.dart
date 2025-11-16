@@ -135,8 +135,8 @@ class Place {
 
   factory Place.fromJson(Map<String, dynamic> json) {
     return Place(
-      placeId: json['place_id'] as String,
-      name: json['name'] as String,
+      placeId: (json['place_id'] as String?) ?? '',
+      name: (json['name'] as String?) ?? 'Unknown Place',
       address: json['formatted_address'] as String?,
       rating: (json['rating'] as num?)?.toDouble(),
       userRatingsTotal: json['user_ratings_total'] as int?,
@@ -158,8 +158,8 @@ class PlaceLocation {
 
   factory PlaceLocation.fromJson(Map<String, dynamic> json) {
     return PlaceLocation(
-      lat: (json['lat'] as num).toDouble(),
-      lng: (json['lng'] as num).toDouble(),
+      lat: ((json['lat'] as num?) ?? 0.0).toDouble(),
+      lng: ((json['lng'] as num?) ?? 0.0).toDouble(),
     );
   }
 }

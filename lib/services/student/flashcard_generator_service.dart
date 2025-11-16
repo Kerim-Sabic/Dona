@@ -77,8 +77,8 @@ Example format:
           final flashcards = data.map((item) {
             return Flashcard(
               id: DateTime.now().millisecondsSinceEpoch.toString() + data.indexOf(item).toString(),
-              question: item['question'] as String,
-              answer: item['answer'] as String,
+              question: (item['question'] as String?) ?? 'Question not available',
+              answer: (item['answer'] as String?) ?? 'Answer not available',
               hint: item['hint'] as String?,
               type: FlashcardType.basic,
               created: DateTime.now(),
@@ -156,10 +156,10 @@ Example format:
           final flashcards = data.map((item) {
             return Flashcard(
               id: DateTime.now().millisecondsSinceEpoch.toString() + data.indexOf(item).toString(),
-              question: item['question'] as String,
-              answer: item['answer'] as String,
+              question: (item['question'] as String?) ?? 'Question not available',
+              answer: (item['answer'] as String?) ?? 'Answer not available',
               hint: item['hint'] as String?,
-              tags: [item['topic'] as String],
+              tags: [(item['topic'] as String?) ?? 'General'],
               type: FlashcardType.basic,
               created: DateTime.now(),
             );
@@ -598,9 +598,9 @@ Example format:
         _decks = data.map((item) {
           final flashcards = (item['flashcards'] as List<dynamic>).map((c) {
             return Flashcard(
-              id: c['id'] as String,
-              question: c['question'] as String,
-              answer: c['answer'] as String,
+              id: (c['id'] as String?) ?? DateTime.now().millisecondsSinceEpoch.toString(),
+              question: (c['question'] as String?) ?? 'Question not available',
+              answer: (c['answer'] as String?) ?? 'Answer not available',
               hint: c['hint'] as String?,
               type: FlashcardType.values.firstWhere(
                 (t) => t.toString() == c['type'],
@@ -613,8 +613,8 @@ Example format:
           }).toList();
 
           return FlashcardDeck(
-            id: item['id'] as String,
-            title: item['title'] as String,
+            id: (item['id'] as String?) ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            title: (item['title'] as String?) ?? 'Untitled Deck',
             description: item['description'] as String?,
             flashcards: flashcards,
             courseId: item['courseId'] as String?,

@@ -39,7 +39,7 @@ class DriveFile {
   factory DriveFile.fromJson(Map<String, dynamic> json) {
     return DriveFile(
       id: json['id'] as String?,
-      name: json['name'] as String,
+      name: (json['name'] as String?) ?? 'Untitled',
       mimeType: json['mimeType'] as String?,
       size: json['size'] != null ? int.tryParse(json['size'].toString()) : null,
       createdTime: json['createdTime'] != null ? DateTime.parse(json['createdTime']) : null,
