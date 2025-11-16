@@ -15,6 +15,10 @@ import 'services/google_maps/google_maps_service.dart';
 import 'services/gmail/gmail_service.dart';
 import 'services/google_drive/google_drive_service.dart';
 import 'services/google_tasks/google_tasks_service.dart';
+import 'assistant/assistant_brain.dart';
+import 'assistant/memory/memory_engine.dart';
+import 'assistant/memory/user_model.dart';
+import 'assistant/context/context_engine.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +76,40 @@ Future<void> _initializeServices() async {
       AppLogger.error('❌ Failed to initialize gamification service', e, stackTrace);
     }
 
-    // Step 5: Initialize external API services (non-critical)
+    // Step 5: Initialize Next-Gen Personal OS components
+    try {
+      AppLogger.info('🧠 Initializing Memory Engine...');
+      await MemoryEngine.instance.init();
+      AppLogger.info('✅ Memory Engine initialized');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to initialize Memory Engine', e, stackTrace);
+    }
+
+    try {
+      AppLogger.info('👤 Initializing User Model Service...');
+      await UserModelService.instance.init();
+      AppLogger.info('✅ User Model Service initialized');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to initialize User Model Service', e, stackTrace);
+    }
+
+    try {
+      AppLogger.info('🎭 Initializing Assistant Brain...');
+      await AssistantBrain.instance.init();
+      AppLogger.info('✅ Assistant Brain initialized');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to initialize Assistant Brain', e, stackTrace);
+    }
+
+    try {
+      AppLogger.info('🌍 Initializing Context Engine...');
+      await ContextEngine.instance.init();
+      AppLogger.info('✅ Context Engine initialized');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to initialize Context Engine', e, stackTrace);
+    }
+
+    // Step 6: Initialize external API services (non-critical)
     await _initializeExternalServices();
 
     // TODO: Initialize Firebase
