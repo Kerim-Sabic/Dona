@@ -155,7 +155,7 @@ Example format:
       final response = await AIService.instance.chat(prompt);
 
       try {
-        final jsonMatch = RegExp(r'\[[^\]]*\]', multiLine: true, dotAll: true).firstMatch(response);
+        final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(response);
         if (jsonMatch != null) {
           final List<dynamic> data = jsonDecode(jsonMatch.group(0)!);
           return data.map((item) => item as String).toList();
@@ -193,7 +193,7 @@ Example format:
       final response = await AIService.instance.chat(prompt);
 
       try {
-        final jsonMatch = RegExp(r'\[[^\]]*\]', multiLine: true, dotAll: true).firstMatch(response);
+        final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(response);
         if (jsonMatch != null) {
           final List<dynamic> data = jsonDecode(jsonMatch.group(0)!);
           return data.map((item) => item as String).toList();
@@ -233,7 +233,7 @@ Example format:
       final response = await AIService.instance.chat(prompt);
 
       try {
-        final jsonMatch = RegExp(r'\[[^\]]*\]', multiLine: true, dotAll: true).firstMatch(response);
+        final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(response);
         if (jsonMatch != null) {
           final List<dynamic> data = jsonDecode(jsonMatch.group(0)!);
           return data.map((item) {
@@ -283,7 +283,7 @@ Example format:
       final response = await AIService.instance.chat(prompt);
 
       try {
-        final jsonMatch = RegExp(r'\[[^\]]*\]', multiLine: true, dotAll: true).firstMatch(response);
+        final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(response);
         if (jsonMatch != null) {
           final List<dynamic> data = jsonDecode(jsonMatch.group(0)!);
           return data.map((item) => item as String).toList();

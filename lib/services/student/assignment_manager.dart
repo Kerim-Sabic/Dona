@@ -260,9 +260,9 @@ Example format:
 
   /// Get upcoming assignments (sorted by due date)
   List<Assignment> getUpcomingAssignments({int limit = 10}) {
-    return incompleteAssignments
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate))
-      ..take(limit);
+    final sorted = List<Assignment>.from(incompleteAssignments)
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return sorted.take(limit).toList();
   }
 
   /// Suggest estimated time based on past data and AI

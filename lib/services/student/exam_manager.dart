@@ -199,7 +199,7 @@ Example format:
 
       try {
         // Extract JSON from response
-        final jsonMatch = RegExp(r'\[[^\]]*\]').firstMatch(response);
+        final jsonMatch = RegExp(r'\[[\s\S]*\]').firstMatch(response);
         if (jsonMatch != null) {
           final List<dynamic> data = jsonDecode(jsonMatch.group(0)!);
           final topics = data.map((item) {
