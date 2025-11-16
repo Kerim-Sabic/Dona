@@ -406,50 +406,70 @@ class VoiceCommandHandler {
 
   // Helper: Extract email details
   Future<Map<String, String>> _extractEmailDetails(String command) async {
-    final prompt = '''
-Extract email details from this command: "$command"
-
-Return JSON with:
-{
-  "recipient": "email or name",
-  "subject": "subject line",
-  "message": "email body"
-}
-
-If not specified, use null.
-''';
-
     try {
-      final response = await AIService.instance.chat(prompt);
-      // Parse JSON response
-      return {'recipient': '', 'subject': '', 'message': command};
+      // Use regex to extract basic email components
+      final recipientMatch = RegExp(r'to\s+(\w+)').firstMatch(command);
+      final sayingMatch = RegExp(r'saying\s+(.+)').firstMatch(command);
+
+      String? recipient;
+      String? message;
+
+      if (recipientMatch != null) {
+        recipient = recipientMatch.group(1);
+      }
+
+      if (sayingMatch != null) {
+        message = sayingMatch.group(1);
+      } else {
+        // If no "saying", the whole command after recipient is the message
+        message = command;
+      }
+
+      return {
+        'recipient': recipient ?? '',
+        'subject': 'Quick message',
+        'message': message ?? command,
+      };
     } catch (e) {
+      AppLogger.error('Error extracting email details', e);
       return {'message': command};
     }
   }
 
   // Helper: Extract reminder details
   Future<Map<String, String>> _extractReminderDetails(String command) async {
-    final prompt = '''
-Extract reminder details from: "$command"
-
-Return JSON with:
-{
-  "task": "what to do",
-  "location": "where"
-}
-
-Examples:
-- "Remind me to buy milk at the grocery store" → {"task": "buy milk", "location": "grocery store"}
-- "When I'm at the office, remind me to call John" → {"task": "call John", "location": "office"}
-''';
-
     try {
-      final response = await AIService.instance.chat(prompt);
-      // Parse JSON response
-      return {'task': '', 'location': ''};
+      final lowerCommand = command.toLowerCase();
+
+      // Pattern: "remind me to [task] when/at [location]"
+      String? task;
+      String? location;
+
+      // Extract task
+      final taskMatch = RegExp(r'remind me to\s+(.+?)\s+(?:when|at)').firstMatch(lowerCommand);
+      if (taskMatch != null) {
+        task = taskMatch.group(1);
+      } else {
+        // Try without location
+        final simpleTaskMatch = RegExp(r'remind me to\s+(.+)').firstMatch(lowerCommand);
+        if (simpleTaskMatch != null) {
+          task = simpleTaskMatch.group(1);
+        }
+      }
+
+      // Extract location
+      final locationMatch = RegExp(r'(?:when|at|near)\s+(?:i\'m\s+)?(?:at\s+)?(?:the\s+)?(.+)').firstMatch(lowerCommand);
+      if (locationMatch != null) {
+        location = locationMatch.group(1);
+      }
+
+      return {
+        'task': task ?? command,
+        'location': location ?? '',
+      };
     } catch (e) {
-      return {};
+      AppLogger.error('Error extracting reminder details', e);
+      return {'task': command, 'location': ''};
     }
   }
 

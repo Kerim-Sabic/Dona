@@ -267,19 +267,66 @@ class ProductivityInsights {
 
   /// Analyze energy levels
   EnergyProfile _analyzeEnergyLevels() {
-    // Simplified energy profile
-    // In production, would track actual energy self-reports
+    // Analyze actual activity patterns to determine energy levels
+    final hourlyActivity = <int, int>{};
+
+    // Count focus sessions by hour
+    for (final log in _activityLogs) {
+      if (log.type == ActivityType.focusWork) {
+        final hour = log.timestamp.hour;
+        hourlyActivity[hour] = (hourlyActivity[hour] ?? 0) + 1;
+      }
+    }
+
+    // Sort hours by activity frequency
+    final sortedHours = hourlyActivity.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Determine peak, good, and low hours based on actual data
+    final peakHours = sortedHours.take(3).map((e) => e.key).toList();
+    final goodHours = sortedHours.skip(3).take(3).map((e) => e.key).toList();
+    final lowHours = [13, 17, 18]; // Common low energy times
+
+    // If no data, use defaults
+    if (peakHours.isEmpty) {
+      return EnergyProfile(
+        peakHours: [9, 10, 11],
+        goodHours: [14, 15, 16],
+        lowHours: [13, 17, 18],
+        recommendations: {
+          'Deep work': '9-11 AM (default)',
+          'Meetings': '2-4 PM (default)',
+          'Email & admin': 'After lunch (default)',
+        },
+      );
+    }
 
     return EnergyProfile(
-      peakHours: [9, 10, 11], // 9-11 AM
-      goodHours: [14, 15, 16], // 2-4 PM
-      lowHours: [13, 17, 18], // After lunch, late afternoon
+      peakHours: peakHours,
+      goodHours: goodHours,
+      lowHours: lowHours,
       recommendations: {
-        'Deep work': '9-11 AM',
-        'Meetings': '2-4 PM',
-        'Email & admin': 'After lunch',
+        'Deep work': _formatHourRange(peakHours),
+        'Meetings': _formatHourRange(goodHours),
+        'Email & admin': 'During low energy periods',
       },
     );
+  }
+
+  /// Format hour range
+  String _formatHourRange(List<int> hours) {
+    if (hours.isEmpty) return 'Not determined';
+    if (hours.length == 1) return _formatHour(hours.first);
+
+    final sorted = hours..sort();
+    return '${_formatHour(sorted.first)}-${_formatHour(sorted.last)}';
+  }
+
+  /// Format single hour
+  String _formatHour(int hour) {
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    final period = hour >= 12 ? 'PM' : 'AM';
+    return '$displayHour $period';
   }
 
   /// Generate AI insights

@@ -4,6 +4,7 @@ import '../notifications/smart_notification_service.dart';
 import '../calendar/calendar_service.dart';
 import '../../data/user_profile.dart';
 import '../storage/local_storage_service.dart';
+import '../analytics/activity_tracker.dart';
 import 'dart:convert';
 
 /// Focus Mode Service
@@ -118,6 +119,12 @@ class FocusModeService {
         onFocusModeChanged!(_isActive);
       }
 
+      // Track activity
+      ActivityTracker.instance.startActivity(
+        ActivityType.focusWork,
+        metadata: {'preset': focusPreset.name, 'goal': goal},
+      );
+
       AppLogger.info('Started focus session: ${focusPreset.name} for ${duration.inMinutes}min');
     } catch (e, stackTrace) {
       AppLogger.error('Error starting focus mode', e, stackTrace);
@@ -152,6 +159,19 @@ class FocusModeService {
 
       // Disable Do Not Disturb
       SmartNotificationService.instance.disableDoNotDisturb();
+
+      // End activity tracking
+      ActivityTracker.instance.endCurrentActivity();
+
+      // Also log the session to insights
+      ActivityTracker.instance.trackFocusSession(
+        _currentSession!.actualDuration!,
+        metadata: {
+          'preset': _currentSession!.preset.name,
+          'goal': _currentSession!.goal,
+          'productivityScore': _currentSession!.productivityScore,
+        },
+      );
 
       if (onSessionComplete != null) {
         onSessionComplete!(_currentSession!);
