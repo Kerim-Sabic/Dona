@@ -14,6 +14,7 @@ import '../../../domain/autopilot/autopilot_models.dart';
 import '../../../core/config/feature_tiers.dart';
 import '../../../assistant/ai_router/ai_router.dart';
 import '../../widgets/upgrade/upgrade_dialog.dart';
+import '../../widgets/command_palette/command_palette.dart';
 
 /// Command Center - The main hub for Dona's intelligent assistance
 /// Shows context-aware recommendations, priorities, and autopilot actions
@@ -110,6 +111,17 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
                 ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => CommandPalette.show(context),
+        backgroundColor: GlassmorphismTheme.primaryBlue,
+        icon: const Icon(Icons.search, color: Colors.white),
+        label: const Text(
+          'Quick Actions',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        elevation: 8,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
