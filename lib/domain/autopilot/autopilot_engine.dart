@@ -6,6 +6,7 @@ import '../../core/utils/logger.dart';
 import '../../services/storage/local_storage_service.dart';
 import 'history/autopilot_history_service.dart';
 import 'history/autopilot_history_entry.dart';
+import '../../core/config/feature_tiers.dart';
 
 /// Autopilot Engine - Core orchestrator for autonomous task execution
 ///
@@ -238,6 +239,21 @@ class AutopilotEngine {
 
       // Record in history
       await _recordHistory(plan, completedActions.length, failedActions.length);
+
+      // Track feature usage for successful executions
+      if (failedActions.isEmpty) {
+        try {
+          final type = _mapPlanNameToAutopilotType(plan.planName);
+          if (type != null) {
+            final featureName = _mapAutopilotTypeToFeatureName(type);
+            FeatureUsageTracker.instance.recordUsage(featureName);
+            FeatureUsageTracker.instance.recordUsage('total_autopilots');
+            AppLogger.debug('Recorded usage for feature: $featureName');
+          }
+        } catch (e, stackTrace) {
+          AppLogger.error('Failed to record feature usage', e, stackTrace);
+        }
+      }
 
       AppLogger.info('Plan execution completed: ${result.summary}');
       return result;
@@ -515,5 +531,23 @@ Format your response as a numbered list with clear action descriptions.
     }
 
     return null;
+  }
+
+  /// Map AutopilotType to feature name for usage tracking
+  String _mapAutopilotTypeToFeatureName(AutopilotType type) {
+    switch (type) {
+      case AutopilotType.planMyDay:
+        return 'plan_my_day';
+      case AutopilotType.studyAutopilot:
+        return 'study_autopilot';
+      case AutopilotType.weeklyReview:
+        return 'weekly_review';
+      case AutopilotType.focusMode:
+        return 'focus_mode';
+      case AutopilotType.triage:
+        return 'triage';
+      case AutopilotType.relationship:
+        return 'relationship';
+    }
   }
 }
