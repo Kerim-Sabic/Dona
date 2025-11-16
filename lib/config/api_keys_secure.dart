@@ -53,6 +53,14 @@ class ApiKeys {
     defaultValue: 'http://localhost:8080/auth/callback',
   );
 
+  // Aliases for backward compatibility
+  static String get googleCalendarClientId => googleOAuthClientId;
+  static String get googleCalendarClientSecret => googleOAuthClientSecret;
+  static String get googleCalendarRedirectUri => googleOAuthRedirectUri;
+  static String get gmailClientId => googleOAuthClientId;
+  static String get gmailClientSecret => googleOAuthClientSecret;
+
+
   // Google Calendar API Scopes (public, safe to hardcode)
   static const List<String> googleCalendarScopes = [
     'https://www.googleapis.com/auth/calendar',
@@ -122,6 +130,15 @@ class ApiKeys {
 
   static const String newsBaseUrl = 'https://newsapi.org/v2';
 
+  // WorldNewsAPI (alternative news source)
+  static const String worldNewsApiKey = String.fromEnvironment(
+    'WORLD_NEWS_API_KEY',
+    defaultValue: 'NOT_SET',
+  );
+
+  static const String worldNewsBaseUrl = 'https://api.worldnewsapi.com';
+
+
   // ==================== Weather API ====================
 
   static const String openWeatherApiKey = String.fromEnvironment(
@@ -190,6 +207,7 @@ class ApiConfig {
   // Default values
   static const String defaultCity = 'Sarajevo';
   static const String defaultCountry = 'ba'; // Bosnia and Herzegovina
+  static const String defaultCountryCode = 'ba'; // Alias for compatibility
   static const String defaultLanguage = 'en';
   static const String temperatureUnit = 'metric'; // Celsius
 
