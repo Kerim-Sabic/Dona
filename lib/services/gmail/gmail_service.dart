@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../storage/local_storage_service.dart';
 
 /// Email message model
@@ -305,7 +305,8 @@ class GmailService {
         AppLogger.info('Email sent successfully: ${data['id']}');
         return EmailMessage.fromJson(data);
       } else {
-        throw Exception('Failed to send email: ${response.statusCode} - ${response.body}');
+        AppLogger.error('Failed to send email: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('Failed to send email: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to send email', e, stackTrace);

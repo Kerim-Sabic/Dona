@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 
 /// Service for interacting with DeepSeek AI API
 class AIService {
@@ -77,7 +77,8 @@ class AIService {
         AppLogger.info('Received AI response');
         return aiResponse;
       } else {
-        throw Exception('AI API error: ${response.statusCode} - ${response.body}');
+        AppLogger.error('AI API error: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('AI API error: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to get AI response', e, stackTrace);

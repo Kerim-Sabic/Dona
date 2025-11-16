@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../../data/models/calendar_event.dart';
 import '../storage/local_storage_service.dart';
 
@@ -200,7 +200,8 @@ class CalendarService {
         AppLogger.info('Event created successfully: ${createdEvent.id}');
         return createdEvent;
       } else {
-        throw Exception('Failed to create event: ${response.statusCode} - ${response.body}');
+        AppLogger.error('Failed to create event: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('Failed to create event: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to create calendar event', e, stackTrace);

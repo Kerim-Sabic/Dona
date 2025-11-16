@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../storage/local_storage_service.dart';
 
 /// Google Task model

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../../data/models/weather_data.dart';
 
 /// Service for fetching weather from OpenWeatherMap API
@@ -38,7 +38,8 @@ class WeatherService {
         AppLogger.info('Fetched weather for ${weather.cityName}');
         return weather;
       } else {
-        throw Exception('Weather API error: ${response.statusCode} - ${response.body}');
+        AppLogger.error('Weather API error: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('Weather API error: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to fetch current weather', e, stackTrace);

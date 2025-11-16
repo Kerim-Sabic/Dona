@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../storage/local_storage_service.dart';
 
 /// Google Drive file model
@@ -284,7 +284,8 @@ class GoogleDriveService {
         AppLogger.info('File uploaded successfully: ${uploadedFile.id}');
         return uploadedFile;
       } else {
-        throw Exception('Failed to upload file: ${response.statusCode} - ${response.body}');
+        AppLogger.error('Failed to upload file: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('Failed to upload file: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to upload file', e, stackTrace);

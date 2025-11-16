@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/utils/logger.dart';
-import '../../config/api_keys.dart';
+import '../../config/api_keys_secure.dart';
 import '../../data/models/news_article.dart';
 
 /// Service for fetching news from WorldNewsAPI
@@ -59,7 +59,8 @@ class NewsService {
         AppLogger.info('Fetched ${articles.length} news articles');
         return articles.take(limit).toList();
       } else {
-        throw Exception('News API error: ${response.statusCode} - ${response.body}');
+        AppLogger.error('News API error: ${response.statusCode}', response.body, StackTrace.current);
+        throw Exception('News API error: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to fetch top news', e, stackTrace);
