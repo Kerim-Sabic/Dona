@@ -727,6 +727,152 @@ The Personal OS upgrade transforms Dona from a task-based assistant into an inte
 
 ---
 
+### **13. Production Readiness & Quality (Phase 3 - NEW)**
+
+Comprehensive testing, diagnostics, offline support, privacy controls, and tier management for production deployment.
+
+#### **13.1 Unit & Widget Tests**
+- **Coverage:** Memory Engine, Context Engine, Autopilot Models
+- **Test Files:**
+  - `test/assistant/memory/memory_engine_test.dart`
+  - `test/assistant/context/context_engine_test.dart`
+  - `test/domain/autopilot/autopilot_models_test.dart`
+- **Memory Engine Tests:**
+  - Importance decay formula (0.95^days)
+  - Memory relevance threshold (0.1)
+  - Preference reinforcement/weakening
+  - Access count tracking
+  - JSON serialization
+- **Context Engine Tests:**
+  - Stress level calculation (low/medium/high)
+  - Time of day detection
+  - Priority scoring and sorting
+  - Current/next event tracking
+- **Autopilot Tests:**
+  - Plan progress tracking
+  - Action status transitions
+  - Result success/failure handling
+  - JSON serialization
+
+#### **13.2 Enhanced Logging System**
+- **Service:** `AppLogger` (upgraded)
+- **Features:**
+  - Ring buffer (last 100 log entries)
+  - Privacy-safe logging (PII sanitization):
+    - Email patterns → `[EMAIL]`
+    - Phone numbers → `[PHONE]`
+    - API keys/tokens → `[TOKEN]`
+  - Debug-only verbose logging (kDebugMode)
+  - Production mode filters sensitive data
+  - LogEntry model with timestamp, level, message
+  - getRecentLogs() API for diagnostics
+  - clearBuffer() functionality
+
+#### **13.3 Diagnostics Screen (Debug-Only)**
+- **Screen:** `DiagnosticsScreen`
+- **Access:** `/diagnostics` route (kDebugMode guard)
+- **Features:**
+  - Build information (Debug/Release, Platform)
+  - Service status monitoring:
+    - Memory Engine (counts of memories, preferences, routines)
+    - Context Engine (cache validity)
+    - Autopilot Engine (active plans, completed results)
+  - Recent logs viewer (last 30 entries)
+  - Color-coded log levels
+  - Refresh and clear logs actions
+  - Pull-to-refresh support
+
+#### **13.4 Offline Action Queue**
+- **Service:** `ActionQueue`
+- **Models:**
+  - QueuedAction (type, payload, timestamps, status)
+  - QueuedActionType enum (createCalendarEvent, createTask, sendEmail, sendSMS)
+  - QueuedActionStatus (pending, processing, succeeded, failedPermanent)
+- **Features:**
+  - Persists queue to local storage
+  - enqueue() for adding actions offline
+  - processAll() executes pending actions when online
+  - Exponential backoff retry (2^n seconds, capped at 1hr)
+  - Automatic retry (max 5 attempts)
+  - Execution delegates:
+    - Calendar event creation via CalendarService
+    - Task creation via GoogleTasksService
+  - Callbacks for UI updates (onQueueChanged, onActionProcessed)
+  - Queue management (clearSucceeded(), clearAll())
+  - Statistics (pendingCount getter)
+
+#### **13.5 Privacy & Data Control**
+- **Screen:** `PrivacySettingsScreen`
+- **Access:** Settings → Privacy & Data
+- **Features:**
+  - Categorized data display:
+    - Memory & Learning (memories, preferences, routines)
+    - Student Data (courses, exams, assignments)
+    - Productivity Data (queued actions)
+  - Real-time data counts per category
+  - Export functionality:
+    - JSON format with pretty printing
+    - Copies to clipboard
+    - Includes export timestamp
+  - Clear functionality:
+    - Per-category deletion with confirmation
+    - Strong warning dialogs
+    - Permanent deletion
+  - Danger Zone:
+    - "Reset All Data" nuclear option
+    - Multiple confirmation dialogs
+- **Documentation:** `PRIVACY_AND_SAFETY_DESIGN.md`
+  - Complete data inventory
+  - Storage location (all local)
+  - User rights (view, export, delete)
+  - Third-party service policies
+  - GDPR compliance considerations
+
+#### **13.6 AI Router & Tier Management**
+- **Service:** `AiRouter`
+- **Models:**
+  - AiModel enum (light, standard, premium)
+  - AppMode enum (free, premiumTrial, premium)
+  - TierLimits configuration
+  - UsageStats tracking
+- **Features:**
+  - Intelligent model selection based on context
+  - Tier enforcement:
+    - Free: 50 requests/day, 4K context, 2 autopilots/day
+    - Premium Trial: 200 requests/day, 8K context, 10 autopilots/day
+    - Premium: 1000 requests/day, 16K context, 50 autopilots/day
+  - Usage tracking:
+    - Per-day statistics
+    - Cost estimation
+    - Model usage breakdown
+  - Persistent stats in local storage
+  - Manual mode switching (for testing)
+  - Feature availability checks
+  - remainingRequests getter
+  - isFeatureAvailable() API
+- **AssistantBrain Integration:**
+  - Uses AiRouter instead of direct AIService
+  - Automatic model selection
+  - Usage tracking
+- **Documentation:** `AI_ROUTER_AND_APP_MODES.md`
+  - Model selection rules
+  - Tier limits breakdown
+  - Integration guide
+  - Future billing architecture
+
+#### **13.7 Test Coverage**
+- **Unit Tests:** 1,097 lines across 3 test files
+- **Test Execution:** `flutter test`
+- **Coverage Areas:**
+  - Memory decay formulas
+  - Context aggregation
+  - Stress calculation
+  - Autopilot progress tracking
+  - JSON serialization/deserialization
+- **Mock Usage:** All tests use mocks/fakes for services
+
+---
+
 ## 🔧 Technical Architecture
 
 ### **State Management**
