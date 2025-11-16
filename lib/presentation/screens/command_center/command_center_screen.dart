@@ -6,7 +6,14 @@ import '../../../assistant/assistant_brain.dart';
 import '../../../core/utils/logger.dart';
 import '../../../domain/autopilot/autopilots/plan_my_day_autopilot.dart';
 import '../../../domain/autopilot/autopilots/study_autopilot.dart';
+import '../../../domain/autopilot/autopilots/weekly_review_autopilot.dart';
+import '../../../domain/autopilot/autopilots/focus_mode_autopilot.dart';
+import '../../../domain/autopilot/autopilots/triage_autopilot.dart';
+import '../../../domain/autopilot/autopilots/relationship_autopilot.dart';
 import '../../../domain/autopilot/autopilot_models.dart';
+import '../../../core/config/feature_tiers.dart';
+import '../../../assistant/ai_router/ai_router.dart';
+import '../../widgets/upgrade/upgrade_dialog.dart';
 
 /// Command Center - The main hub for Dona's intelligent assistance
 /// Shows context-aware recommendations, priorities, and autopilot actions
@@ -551,6 +558,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
           crossAxisSpacing: GlassmorphismTheme.spacingM,
           childAspectRatio: 1.5,
           children: [
+            // Free autopilots
             _buildQuickActionCard(
               icon: Icons.calendar_view_day,
               title: 'Plan My Day',
@@ -565,25 +573,43 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
               ),
               onTap: () => _triggerStudyAutopilot(),
             ),
+
+            // Premium autopilots
             _buildQuickActionCard(
-              icon: Icons.fitness_center,
+              icon: Icons.calendar_month,
+              title: 'Weekly Review',
+              gradient: const LinearGradient(
+                colors: [Color(0xFFf857a6), Color(0xFFff5858)],
+              ),
+              isPremium: true,
+              onTap: () => _triggerWeeklyReviewAutopilot(),
+            ),
+            _buildQuickActionCard(
+              icon: Icons.psychology,
               title: 'Focus Mode',
               gradient: const LinearGradient(
                 colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
               ),
-              onTap: () {
-                _showComingSoon('Focus Mode');
-              },
+              isPremium: true,
+              onTap: () => _triggerFocusModeAutopilot(),
             ),
             _buildQuickActionCard(
-              icon: Icons.lightbulb,
-              title: 'Smart Suggest',
+              icon: Icons.inbox,
+              title: 'Triage',
               gradient: const LinearGradient(
-                colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
+                colors: [Color(0xFFfa709a), Color(0xFFfee140)],
               ),
-              onTap: () {
-                _showComingSoon('Smart Suggest');
-              },
+              isPremium: true,
+              onTap: () => _triggerTriageAutopilot(),
+            ),
+            _buildQuickActionCard(
+              icon: Icons.favorite,
+              title: 'Relationships',
+              gradient: const LinearGradient(
+                colors: [Color(0xFFd66d75), Color(0xFFe29587)],
+              ),
+              isPremium: true,
+              onTap: () => _triggerRelationshipAutopilot(),
             ),
           ],
         ),
@@ -596,6 +622,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
     required String title,
     required Gradient gradient,
     required VoidCallback onTap,
+    bool isPremium = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -605,28 +632,49 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
           borderRadius: BorderRadius.circular(GlassmorphismTheme.borderRadiusL),
           boxShadow: GlassmorphismTheme.mediumShadow,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(GlassmorphismTheme.spacingM),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 32,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(GlassmorphismTheme.spacingM),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  const SizedBox(height: GlassmorphismTheme.spacingS),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const SizedBox(height: GlassmorphismTheme.spacingS),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+            ),
+            if (isPremium)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.lock,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -883,6 +931,183 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Execution failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Trigger Weekly Review Autopilot (Premium)
+  Future<void> _triggerWeeklyReviewAutopilot() async {
+    // Check feature availability
+    final currentMode = AiRouter.instance.currentMode;
+    if (!FeatureTiers.isFeatureAvailable('weekly_review', currentMode)) {
+      await UpgradeDialog.showFeatureLocked(context, 'weekly_review');
+      return;
+    }
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await WeeklyReviewAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Weekly Review autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate weekly review. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Trigger Focus Mode Autopilot (Premium)
+  Future<void> _triggerFocusModeAutopilot() async {
+    // Check feature availability
+    final currentMode = AiRouter.instance.currentMode;
+    if (!FeatureTiers.isFeatureAvailable('focus_mode', currentMode)) {
+      await UpgradeDialog.showFeatureLocked(context, 'focus_mode');
+      return;
+    }
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await FocusModeAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Focus Mode autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate focus plan. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Trigger Triage Autopilot (Premium)
+  Future<void> _triggerTriageAutopilot() async {
+    // Check feature availability
+    final currentMode = AiRouter.instance.currentMode;
+    if (!FeatureTiers.isFeatureAvailable('triage', currentMode)) {
+      await UpgradeDialog.showFeatureLocked(context, 'triage');
+      return;
+    }
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await TriageAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Triage autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate triage plan. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Trigger Relationship Autopilot (Premium)
+  Future<void> _triggerRelationshipAutopilot() async {
+    // Check feature availability
+    final currentMode = AiRouter.instance.currentMode;
+    if (!FeatureTiers.isFeatureAvailable('relationship', currentMode)) {
+      await UpgradeDialog.showFeatureLocked(context, 'relationship');
+      return;
+    }
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate plan
+      final plan = await RelationshipAutopilot.instance.generatePlan();
+
+      // Close loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Show plan preview
+      if (mounted) {
+        _showAutopilotPreview(plan);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to trigger Relationship autopilot', e, stackTrace);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate relationship plan. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
