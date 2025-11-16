@@ -873,6 +873,201 @@ Comprehensive testing, diagnostics, offline support, privacy controls, and tier 
 
 ---
 
+### **14. Dona Pro - Founder/Executive Mode (Phase 4 - NEW)**
+
+Power-user features, advanced autopilots, command palette, history tracking, and premium monetization foundation.
+
+#### **14.1 Founder/CEO Persona & Usage Profiles**
+- **New Persona:** Founder / CEO Mode
+  - Strategic, outcome-focused tone
+  - Prioritizes planning, decision support, follow-ups
+  - Emphasizes leverage and impact
+  - Weekly reviews and deep work optimization
+  - Operating principles: 80/20, delegation, energy management
+- **Usage Profile System:**
+  - `UsageProfile` enum (student, founder, professional, mixed)
+  - Determines feature highlighting in UI
+  - Influences autopilot suggestions
+  - Stored in LocalStorage
+  - UserModelService integration
+- **PersonaManager Updates:**
+  - `isFounderMode` getter
+  - 5 total personas available
+
+#### **14.2 New Power Autopilots**
+
+**Weekly Review Autopilot** (`weekly_review_autopilot.dart`):
+- Analyzes past 7 days (tasks completed vs created, events, overdue)
+- Projects next 7 days (upcoming events, critical deadlines)
+- Generates plan:
+  - Weekly summary note with highlights
+  - Reschedules overdue tasks (top 3)
+  - Suggests 3-5 weekly goals
+  - Schedules 2-3 focus blocks (Mon, Wed, Fri)
+  - Creates deadline preparation tasks
+  - Schedules next weekly review (7 days out)
+- WeekAnalysis model for metrics
+- Target: Founders, executives, weekly reflection
+
+**Focus Mode Autopilot** (`focus_mode_autopilot.dart`):
+- Creates structured deep work sessions
+- Validates time availability (conflict checking)
+- Pomodoro-style blocks (50 min work, 10 min break)
+- Customizable duration (default 2 hours)
+- Generates plan:
+  - Calendar event for focus session
+  - Tracking task for accomplishments
+  - Break reminders between Pomodoros
+  - Session agenda with priority tasks
+  - Pre-session prep reminder (5 min before)
+  - Post-session review reminder (10 min after)
+- Smart scheduling (9-11 AM or 2-4 PM)
+- AutopilotException for conflicts
+- Target: Deep work, creative tasks, strategic projects
+
+**Email/Task Triage Autopilot** (`triage_autopilot.dart`):
+- Organizes inbox and tasks efficiently
+- Privacy-safe (metadata only, never sends/deletes)
+- Categorizes: Do Today, Schedule, Delegate, Maybe Later
+- Triage types: tasks, inbox, both
+- Generates plan:
+  - Triage summary with recommendations
+  - Reschedules overdue tasks (top 3)
+  - Narrows focus to top 3 if >5 tasks due today
+  - Adds due dates to unscheduled tasks
+  - Batches similar tasks (emails, calls, reviews)
+  - Delegate/defer guidance for large lists
+  - Daily triage task (recurring)
+- Batching intelligence (2+ items triggers batch)
+- Target: Busy professionals, inbox zero seekers
+
+**Relationship Autopilot** (`relationship_autopilot.dart`):
+- Helps maintain important relationships
+- Privacy-first (reminders only, never auto-sends)
+- Analyzes relationship memories (30-90 days since contact)
+- Detects birthdays/anniversaries from calendar
+- Generates plan:
+  - Relationship summary note
+  - Birthday/anniversary prep tasks (2 days before)
+  - Reconnect suggestions (top 3, gentle wording)
+  - Weekly relationship review task (Sunday)
+  - Quality time calendar block (Saturday 10 AM)
+  - Gratitude reminder (daily/weekly)
+- Importance-based sorting
+- Target: Network management, staying in touch
+
+#### **14.3 Global Command Palette**
+- **Component:** `CommandPalette` widget
+- **Models:** `PaletteCommand`, `CommandCategory`
+- **Registry:** `CommandRegistry` (15+ commands)
+- **Features:**
+  - Bottom sheet modal (70% height)
+  - Real-time fuzzy search
+  - Keyboard navigation (↑↓ arrows, Enter, ESC)
+  - Auto-focus search field
+  - Category badges with color coding
+  - Empty state handling
+- **Registered Commands:**
+  - Autopilots (6): Plan My Day, Study, Weekly Review, Focus, Triage, Relationship
+  - Navigation (5): Command Center, Tasks, Calendar, Courses, Diagnostics
+  - Actions (2): Add Task, Add Event
+  - Search (2): Search Courses, Search Tasks
+- **Trigger:** FAB, keyboard shortcut (Cmd/Ctrl+K ready)
+- **Search Algorithm:**
+  - Matches title, description, keywords
+  - Case-insensitive
+  - Empty query shows all
+- **Extensibility:** Easy to add new commands via registry
+
+#### **14.4 Autopilot History & Analytics**
+- **Models:** `AutopilotHistoryEntry`, `AutopilotType`, `AutopilotHistoryStatus`
+- **Service:** `AutopilotHistoryService`
+- **Screen:** `AutopilotHistoryScreen`
+- **Features:**
+  - Records every autopilot execution
+  - Max 100 entries (rolling buffer)
+  - Persistent storage (LocalStorage JSON)
+  - Entry data:
+    - ID, timestamp, type, summary
+    - Total actions, executed actions
+    - Status (success, partial, failed, cancelled)
+    - Error message, created item IDs
+    - Metadata map
+  - Statistics:
+    - Total executions
+    - Success/failed/partial/cancelled counts
+    - Success rate percentage
+    - Breakdown by autopilot type
+  - Filtering:
+    - By type (all or specific autopilot)
+    - By period (all time, 7 days, 30 days)
+  - UI:
+    - Statistics card (4 metrics)
+    - Dual filter system
+    - History list with status badges
+    - Detail modal on tap
+    - Clear history action
+- **Integration:** Called after autopilot execution
+- **Target:** Analytics, debugging, founder insights
+
+#### **14.5 Premium Feature Gating**
+- **Configuration:** `FeatureTiers`, `FeatureUsageTracker`
+- **Upgrade UI:** `UpgradeDialog`
+- **Feature Tiers:**
+  - Free: Plan My Day (1/day), Study (2/day), 50 AI requests/day
+  - Premium Trial: All features, 10 autopilots/day, 200 AI requests/day
+  - Premium: All features, 50 autopilots/day, 1000 AI requests/day
+- **Feature Mapping:**
+  - Free: Basic features + Command Center + Chat
+  - Premium: Weekly Review, Focus Mode, Triage, Relationship, History
+- **Usage Tracking:**
+  - Daily usage counting per feature
+  - Rolling 7-day window
+  - `isUnderLimit()` checking
+  - `getRemainingUses()` for UI
+  - Automatic cleanup
+- **Upgrade Prompts:**
+  - Feature locked dialog (premium features)
+  - Limit reached dialog (daily caps)
+  - Upgrade options bottom sheet
+  - Pricing cards: Monthly ($9.99), Annual ($99.99, 17% savings)
+  - "Coming Soon" for billing (manual switching for now)
+- **API:**
+  ```dart
+  FeatureTiers.isFeatureAvailable('weekly_review', mode)
+  FeatureUsageTracker.instance.recordUsage('focus_mode')
+  FeatureUsageTracker.instance.isUnderLimit('triage', mode)
+  ```
+- **UX:** Non-intrusive, clear value prop, "Maybe Later" option
+
+#### **14.6 Test Coverage (Phase 4)**
+- **New Tests:** 2 test files, ~250 test assertions
+- **Test Files:**
+  - `test/core/config/feature_tiers_test.dart`
+  - `test/presentation/widgets/command_palette/command_models_test.dart`
+- **Coverage:**
+  - Feature gating logic (100%)
+  - Usage tracking (100%)
+  - Command search (100%)
+  - Tier availability checking
+  - Daily limit enforcement
+  - Usage incrementing
+  - Fuzzy search matching
+- **Quality:** Clear names, single assertions, edge cases
+
+#### **14.7 Documentation**
+- **Files:**
+  - `AUTOPILOTS_OVERVIEW.md` (coming soon)
+  - `AI_ROUTER_AND_APP_MODES.md` (updated)
+  - `FEATURES_AND_ARCHITECTURE.md` (this file)
+- **Coverage:**
+  - All 4 new autopilots documented
+  - Command palette usage guide
+  - Feature tier matrix
+  - Premium vs Free comparison
+
+---
+
 ## 🔧 Technical Architecture
 
 ### **State Management**
