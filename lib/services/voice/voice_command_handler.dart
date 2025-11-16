@@ -262,7 +262,7 @@ class VoiceCommandHandler {
 
       return VoiceCommandResult(
         success: true,
-        message: 'This week: ${analytics.totalSessions} focus sessions, ${analytics.totalFocusTime.inHours}hours total, ${analytics.streakDays} day streak.',
+        message: 'This week: ${analytics.totalSessions} focus sessions, ${analytics.totalFocusTime.inHours} hours total, ${analytics.streakDays} day streak.',
         data: {'analytics': analytics},
         action: VoiceAction.focusStats,
       );

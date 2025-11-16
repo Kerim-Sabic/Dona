@@ -334,8 +334,8 @@ Example: "Great week! You crushed your exercise goal with a 5-day streak. Your m
   /// Delete habit
   Future<bool> deleteHabit(String habitId) async {
     try {
-      final removed = _habits.removeWhere((h) => h.id == habitId);
-      if (removed > 0) {
+      final removedCount = _habits.removeWhere((h) => h.id == habitId);
+      if (removedCount > 0) {
         _logs.remove(habitId);
         await _saveHabits();
         await _saveLogs();
