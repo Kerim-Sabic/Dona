@@ -88,7 +88,7 @@ class StudySessionService {
 
       // Enable focus mode if requested
       if (enableFocusMode) {
-        await FocusModeService.instance.startFocusMode(duration: workDuration);
+        await FocusModeService.instance.startFocus(customDuration: workDuration);
       }
 
       // Start timer
@@ -201,7 +201,7 @@ class StudySessionService {
 
       // Disable focus mode
       if (FocusModeService.instance.isActive) {
-        await FocusModeService.instance.stopFocusMode();
+        await FocusModeService.instance.endFocus();
       }
 
       // Calculate final metrics
