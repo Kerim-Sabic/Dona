@@ -11,6 +11,12 @@ import '../facts/facts_service.dart';
 import '../activity/activity_service.dart';
 import '../advice/advice_service.dart';
 import '../affirmations/affirmations_service.dart';
+import '../recipes/recipe_service.dart';
+import '../dictionary/dictionary_service.dart';
+import '../holidays/holidays_service.dart';
+import '../currency/currency_service.dart';
+import '../location/ip_location_service.dart';
+import '../inspiration/inspiration_service.dart';
 import '../speech/speech_service.dart';
 import '../proactive/proactive_assistant.dart';
 import '../../data/user_profile.dart';
@@ -36,7 +42,7 @@ class SmartAssistantCoordinator {
     try {
       AppLogger.info('Initializing Smart Assistant Coordinator...');
 
-      // Initialize all services
+      // Initialize all entertainment & wellness services
       await Future.wait([
         QuotesService.instance.init(),
         JokesService.instance.init(),
@@ -44,6 +50,16 @@ class SmartAssistantCoordinator {
         ActivityService.instance.init(),
         AdviceService.instance.init(),
         AffirmationsService.instance.init(),
+      ]);
+
+      // Initialize new utility services
+      await Future.wait([
+        RecipeService.instance.init(),
+        DictionaryService.instance.init(),
+        HolidaysService.instance.init(),
+        CurrencyService.instance.init(),
+        IPLocationService.instance.init(),
+        InspirationService.instance.init(),
       ]);
 
       // Start proactive monitoring
@@ -65,7 +81,30 @@ class SmartAssistantCoordinator {
       // Add to context
       _context.addUserMessage(message);
 
-      // Parse intent
+      final lowerMessage = message.toLowerCase();
+
+      // Check for specific commands
+      if (lowerMessage.contains('recipe') || lowerMessage.contains('cook') || lowerMessage.contains('meal')) {
+        return await _handleRecipeRequest(message);
+      }
+
+      if (lowerMessage.contains('define') || lowerMessage.contains('what does') || lowerMessage.contains('meaning of')) {
+        return await _handleDictionaryRequest(message);
+      }
+
+      if (lowerMessage.contains('currency') || lowerMessage.contains('exchange') || lowerMessage.contains('convert')) {
+        return await _handleCurrencyRequest(message);
+      }
+
+      if (lowerMessage.contains('holiday') || lowerMessage.contains('public holiday')) {
+        return await _handleHolidayRequest(message);
+      }
+
+      if (lowerMessage.contains('my location') || lowerMessage.contains('where am i')) {
+        return await IPLocationService.instance.getLocationSummary();
+      }
+
+      // Parse intent for other requests
       final intent = await IntentRecognizer.instance.parseIntent(message);
 
       // Log user interaction
@@ -145,6 +184,19 @@ class SmartAssistantCoordinator {
         );
       }
 
+      // Check if today is a holiday
+      final isHoliday = await HolidaysService.instance.isTodayPublicHoliday('BA');
+      if (isHoliday) {
+        final holidays = await HolidaysService.instance.getHolidays(
+          countryCode: 'BA',
+          year: now.year,
+        );
+        final todayHoliday = holidays.where((h) => h.date.startsWith('${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}')).firstOrNull;
+        if (todayHoliday != null) {
+          briefingParts.add('\n🎉 Today is ${todayHoliday.name}!');
+        }
+      }
+
       // Get calendar events
       final events = await CalendarService.instance.getUpcomingEvents(maxResults: 5);
       if (events.isNotEmpty) {
@@ -164,6 +216,12 @@ class SmartAssistantCoordinator {
         for (var article in news) {
           briefingParts.add('  • ${article.title}');
         }
+      }
+
+      // Random meal suggestion for the day
+      final meal = await RecipeService.instance.getRandomMeal();
+      if (meal != null) {
+        briefingParts.add('\n🍳 Meal Idea: ${meal.name}');
       }
 
       // Add motivational close
@@ -214,6 +272,13 @@ class SmartAssistantCoordinator {
         );
       }
 
+      // Check for upcoming holidays
+      final nextHolidays = await HolidaysService.instance.getNextHolidays('BA');
+      if (nextHolidays.isNotEmpty) {
+        final next = nextHolidays.first;
+        wrapupParts.add('\n🎉 Next Holiday: ${next.name} (${next.date})');
+      }
+
       // Evening affirmation
       final affirmation = await AffirmationsService.instance.getRandomAffirmation();
       if (affirmation != null) {
@@ -232,6 +297,105 @@ class SmartAssistantCoordinator {
     } catch (e, stackTrace) {
       AppLogger.error('Failed to generate evening wrap-up', e, stackTrace);
       return 'Have a wonderful evening! Rest well.';
+    }
+  }
+
+  /// Handle recipe request
+  Future<String> _handleRecipeRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check if user wants random recipe
+      if (lowerMessage.contains('random') || lowerMessage.contains('suggest')) {
+        final meal = await RecipeService.instance.getRandomMeal();
+        if (meal != null) {
+          return '🍳 Recipe Suggestion: ${meal.name}\n\n'
+              '📝 Category: ${meal.category}\n'
+              '🌍 Cuisine: ${meal.area}\n\n'
+              '📋 Ingredients:\n${meal.ingredientsList}\n\n'
+              '👨‍🍳 Instructions:\n${meal.instructions?.substring(0, 200) ?? "See full recipe for instructions"}...';
+        }
+      }
+
+      // Try to extract search term
+      final searchTerm = message
+          .replaceAll(RegExp(r'(recipe|cook|meal|for|make|how to)', caseSensitive: false), '')
+          .trim();
+
+      if (searchTerm.isNotEmpty) {
+        final meals = await RecipeService.instance.searchMealsByName(searchTerm);
+        if (meals.isNotEmpty) {
+          final meal = meals.first;
+          return '🍳 Found: ${meal.name}\n\n'
+              '📝 Category: ${meal.category}\n'
+              '🌍 Cuisine: ${meal.area}';
+        }
+      }
+
+      return 'I can help you find recipes! Try asking for "random recipe" or "recipe for chicken"';
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling recipe request', e, stackTrace);
+      return 'Unable to fetch recipe at the moment.';
+    }
+  }
+
+  /// Handle dictionary request
+  Future<String> _handleDictionaryRequest(String message) async {
+    try {
+      // Extract word from message
+      final word = message
+          .replaceAll(RegExp(r'(define|what does|meaning of|definition of)', caseSensitive: false), '')
+          .replaceAll('mean', '')
+          .trim()
+          .split(' ')
+          .first;
+
+      if (word.isNotEmpty) {
+        return await DictionaryService.instance.getWordSummary(word);
+      }
+
+      return 'What word would you like me to define?';
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling dictionary request', e, stackTrace);
+      return 'Unable to fetch definition at the moment.';
+    }
+  }
+
+  /// Handle currency request
+  Future<String> _handleCurrencyRequest(String message) async {
+    try {
+      // Try to detect currency conversion request
+      // Pattern: "convert X USD to EUR"
+      final pattern = RegExp(r'(\d+\.?\d*)\s*([A-Z]{3})\s*to\s*([A-Z]{3})', caseSensitive: false);
+      final match = pattern.firstMatch(message);
+
+      if (match != null) {
+        final amount = double.parse(match.group(1)!);
+        final from = match.group(2)!.toUpperCase();
+        final to = match.group(3)!.toUpperCase();
+
+        return await CurrencyService.instance.getConversionSummary(
+          from: from,
+          to: to,
+          amount: amount,
+        );
+      }
+
+      // Default: show popular rates
+      return await CurrencyService.instance.getPopularRates();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling currency request', e, stackTrace);
+      return 'Unable to fetch currency rates at the moment.';
+    }
+  }
+
+  /// Handle holiday request
+  Future<String> _handleHolidayRequest(String message) async {
+    try {
+      return await HolidaysService.instance.getHolidaysSummary('BA');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling holiday request', e, stackTrace);
+      return 'Unable to fetch holiday information at the moment.';
     }
   }
 
@@ -290,7 +454,7 @@ class SmartAssistantCoordinator {
         }
       }
 
-      // Default to quote
+      // Default to quote or inspiration
       final quote = await QuotesService.instance.getRandomQuote();
       if (quote != null) {
         return '📖 "${quote.text}"\n- ${quote.author}';
@@ -333,13 +497,9 @@ class SmartAssistantCoordinator {
   /// Handle greeting
   Future<String> _handleGreeting() async {
     final greeting = _getTimeBasedGreeting();
-    final quote = await QuotesService.instance.getRandomQuote();
+    final inspiration = await InspirationService.instance.getRandomInspiration();
 
-    if (quote != null) {
-      return '$greeting\n\n"${quote.text}" - ${quote.author}\n\nHow can I assist you today?';
-    }
-
-    return '$greeting\nHow can I help you today?';
+    return '$greeting\n\n$inspiration\n\nHow can I assist you today?';
   }
 
   /// Handle calendar intent
@@ -385,6 +545,26 @@ class SmartAssistantCoordinator {
   • Get weather forecasts
   • Read latest news headlines
 
+🍳 Recipes & Cooking
+  • Find recipes by name or ingredient
+  • Get random meal suggestions
+
+📖 Dictionary & Learning
+  • Define words
+  • Get synonyms and examples
+
+💱 Currency & Finance
+  • Convert currencies
+  • Check exchange rates
+
+🎉 Holidays & Events
+  • Check public holidays
+  • Upcoming celebrations
+
+📍 Location
+  • Get your IP location
+  • Timezone information
+
 💡 Smart Suggestions
   • Activity recommendations
   • Motivational quotes & affirmations
@@ -419,7 +599,6 @@ Just ask me anything, and I'll do my best to help!''';
       morningTime = morningTime.add(const Duration(days: 1));
     }
 
-    final morningDelay = morningTime.difference(now);
     _morningRoutineTimer = Timer.periodic(const Duration(days: 1), (_) async {
       final briefing = await getMorningBriefing();
       AppLogger.info('Morning briefing ready: $briefing');
@@ -432,7 +611,6 @@ Just ask me anything, and I'll do my best to help!''';
       eveningTime = eveningTime.add(const Duration(days: 1));
     }
 
-    final eveningDelay = eveningTime.difference(now);
     _eveningRoutineTimer = Timer.periodic(const Duration(days: 1), (_) async {
       final wrapup = await getEveningWrapup();
       AppLogger.info('Evening wrap-up ready: $wrapup');
