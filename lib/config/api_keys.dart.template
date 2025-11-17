@@ -13,6 +13,10 @@ class ApiKeys {
   static const String claudeApiKey = 'your-claude-api-key-here';
   static const String openAiApiKey = 'your-openai-api-key-here';
 
+  // DeepSeek AI API
+  static const String deepSeekApiKey = 'your-deepseek-api-key-here';
+  static const String deepSeekBaseUrl = 'https://api.deepseek.com/v1';
+
   // ==================== Google Cloud APIs ====================
 
   // Google Cloud Speech-to-Text API
@@ -91,6 +95,11 @@ class ApiKeys {
   static const String newsApiKey = 'your-news-api-key-here';
   static const String newsBaseUrl = 'https://newsapi.org/v2';
 
+  // WorldNewsAPI - Better for international news
+  // Get from: https://worldnewsapi.com
+  static const String worldNewsApiKey = 'your-worldnews-api-key-here';
+  static const String worldNewsBaseUrl = 'https://api.worldnewsapi.com';
+
   // ==================== Weather API ====================
 
   // Get from: https://openweathermap.org/api
@@ -111,8 +120,14 @@ class ApiConfig {
   // Default values
   static const String defaultCity = 'Sarajevo';
   static const String defaultCountry = 'ba'; // Bosnia and Herzegovina
+  static const String defaultCountryCode = 'ba'; // For news APIs
   static const String defaultLanguage = 'en';
   static const String temperatureUnit = 'metric'; // Celsius
+
+  // AI Configuration
+  static const String aiModel = 'deepseek-chat';
+  static const double aiTemperature = 0.7;
+  static const int aiMaxTokens = 1000;
 
   // API Base URLs
   static const String googleApisBaseUrl = 'https://www.googleapis.com';
