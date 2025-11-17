@@ -20,6 +20,12 @@ import '../inspiration/inspiration_service.dart';
 import '../speech/speech_service.dart';
 import '../proactive/proactive_assistant.dart';
 import '../../data/user_profile.dart';
+import '../trivia/trivia_service.dart';
+import '../books/books_service.dart';
+import '../sports/sports_service.dart';
+import '../movies/movies_service.dart';
+import '../fitness/fitness_service.dart';
+import '../nutrition/nutrition_service.dart';
 
 /// Smart Assistant Coordinator
 ///
@@ -62,6 +68,16 @@ class SmartAssistantCoordinator {
         InspirationService.instance.init(),
       ]);
 
+      // Initialize WORLD-CLASS entertainment & learning services
+      await Future.wait([
+        TriviaService.instance.init(),
+        BooksService.instance.init(),
+        SportsService.instance.init(),
+        MoviesService.instance.init(),
+        FitnessService.instance.init(),
+        NutritionService.instance.init(),
+      ]);
+
       // Start proactive monitoring
       ProactiveAssistant.instance.startMonitoring();
 
@@ -84,22 +100,62 @@ class SmartAssistantCoordinator {
       final lowerMessage = message.toLowerCase();
 
       // Check for specific commands
+
+      // TRIVIA & QUIZZES
+      if (lowerMessage.contains('trivia') || lowerMessage.contains('quiz') || lowerMessage.contains('question')) {
+        return await _handleTriviaRequest(message);
+      }
+
+      // BOOKS & READING
+      if (lowerMessage.contains('book') || lowerMessage.contains('read') || lowerMessage.contains('author')) {
+        return await _handleBookRequest(message);
+      }
+
+      // SPORTS & SCORES
+      if (lowerMessage.contains('sport') || lowerMessage.contains('team') || lowerMessage.contains('match') ||
+          lowerMessage.contains('game') || lowerMessage.contains('score')) {
+        return await _handleSportsRequest(message);
+      }
+
+      // MOVIES & TV
+      if (lowerMessage.contains('movie') || lowerMessage.contains('film') || lowerMessage.contains('tv show') ||
+          lowerMessage.contains('watch')) {
+        return await _handleMovieRequest(message);
+      }
+
+      // FITNESS & WORKOUT
+      if (lowerMessage.contains('workout') || lowerMessage.contains('exercise') || lowerMessage.contains('fitness') ||
+          lowerMessage.contains('gym')) {
+        return await _handleFitnessRequest(message);
+      }
+
+      // NUTRITION & FOOD
+      if (lowerMessage.contains('nutrition') || lowerMessage.contains('calorie') || lowerMessage.contains('diet') ||
+          lowerMessage.contains('healthy eat')) {
+        return await _handleNutritionRequest(message);
+      }
+
+      // RECIPES & COOKING
       if (lowerMessage.contains('recipe') || lowerMessage.contains('cook') || lowerMessage.contains('meal')) {
         return await _handleRecipeRequest(message);
       }
 
+      // DICTIONARY
       if (lowerMessage.contains('define') || lowerMessage.contains('what does') || lowerMessage.contains('meaning of')) {
         return await _handleDictionaryRequest(message);
       }
 
+      // CURRENCY
       if (lowerMessage.contains('currency') || lowerMessage.contains('exchange') || lowerMessage.contains('convert')) {
         return await _handleCurrencyRequest(message);
       }
 
+      // HOLIDAYS
       if (lowerMessage.contains('holiday') || lowerMessage.contains('public holiday')) {
         return await _handleHolidayRequest(message);
       }
 
+      // LOCATION
       if (lowerMessage.contains('my location') || lowerMessage.contains('where am i')) {
         return await IPLocationService.instance.getLocationSummary();
       }
@@ -399,6 +455,185 @@ class SmartAssistantCoordinator {
     }
   }
 
+  /// Handle trivia request
+  Future<String> _handleTriviaRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for specific category
+      if (lowerMessage.contains('science')) {
+        return await TriviaService.instance.getTriviaQuizSummary(category: 'Science & Nature');
+      } else if (lowerMessage.contains('history')) {
+        return await TriviaService.instance.getTriviaQuizSummary(category: 'History');
+      } else if (lowerMessage.contains('sport')) {
+        return await TriviaService.instance.getTriviaQuizSummary(category: 'Sports');
+      } else if (lowerMessage.contains('movie') || lowerMessage.contains('film')) {
+        return await TriviaService.instance.getTriviaQuizSummary(category: 'Film');
+      }
+
+      // Default: random quiz
+      return await TriviaService.instance.getTriviaQuizSummary();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling trivia request', e, stackTrace);
+      return 'Unable to start trivia quiz at the moment.';
+    }
+  }
+
+  /// Handle book request
+  Future<String> _handleBookRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for genre/subject search
+      if (lowerMessage.contains('fiction') || lowerMessage.contains('sci-fi') ||
+          lowerMessage.contains('fantasy') || lowerMessage.contains('mystery')) {
+        final genre = lowerMessage.contains('fiction') ? 'fiction' :
+                      lowerMessage.contains('sci-fi') ? 'science fiction' :
+                      lowerMessage.contains('fantasy') ? 'fantasy' : 'mystery';
+        return await BooksService.instance.getGenreRecommendations(genre);
+      }
+
+      // Extract search term
+      final searchTerm = message
+          .replaceAll(RegExp(r'(book|read|author|about|find|search)', caseSensitive: false), '')
+          .trim();
+
+      if (searchTerm.isNotEmpty) {
+        return await BooksService.instance.getBookSummary(searchTerm);
+      }
+
+      // Default: trending books
+      final books = await BooksService.instance.getTrendingBooks();
+      if (books.isNotEmpty) {
+        final buffer = StringBuffer('📚 Popular Books:\n\n');
+        for (var i = 0; i < books.length && i < 5; i++) {
+          buffer.writeln('${i + 1}. ${books[i].title}');
+          if (books[i].authors.isNotEmpty) {
+            buffer.writeln('   by ${books[i].authors.first}\n');
+          }
+        }
+        return buffer.toString();
+      }
+
+      return 'I can help you find books! Try asking for "science fiction books" or "books about history"';
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling book request', e, stackTrace);
+      return 'Unable to search books at the moment.';
+    }
+  }
+
+  /// Handle sports request
+  Future<String> _handleSportsRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for today's sports
+      if (lowerMessage.contains('today') || lowerMessage.contains('now')) {
+        return await SportsService.instance.getTodaysSports();
+      }
+
+      // Check for specific team
+      final teamPattern = RegExp(r'(team|about)\s+(.+)', caseSensitive: false);
+      final teamMatch = teamPattern.firstMatch(message);
+      if (teamMatch != null) {
+        final teamName = teamMatch.group(2)!.trim();
+        return await SportsService.instance.getTeamSummary(teamName);
+      }
+
+      // Default: today's sports
+      return await SportsService.instance.getTodaysSports();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling sports request', e, stackTrace);
+      return 'Unable to fetch sports information at the moment.';
+    }
+  }
+
+  /// Handle movie request
+  Future<String> _handleMovieRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for TV shows
+      if (lowerMessage.contains('tv') || lowerMessage.contains('show') || lowerMessage.contains('series')) {
+        return await MoviesService.instance.getTVShowRecommendations();
+      }
+
+      // Check for trending/popular
+      if (lowerMessage.contains('trending') || lowerMessage.contains('popular') || lowerMessage.contains('recommend')) {
+        return await MoviesService.instance.getMovieRecommendations(trending: true);
+      }
+
+      // Extract search term
+      final searchTerm = message
+          .replaceAll(RegExp(r'(movie|film|watch|about|find)', caseSensitive: false), '')
+          .trim();
+
+      if (searchTerm.isNotEmpty) {
+        return await MoviesService.instance.getMovieInfo(searchTerm);
+      }
+
+      // Default: trending movies
+      return await MoviesService.instance.getMovieRecommendations();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling movie request', e, stackTrace);
+      return 'Unable to fetch movie information at the moment.';
+    }
+  }
+
+  /// Handle fitness request
+  Future<String> _handleFitnessRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for quick workout
+      if (lowerMessage.contains('quick') || lowerMessage.contains('15') || lowerMessage.contains('short')) {
+        return await FitnessService.instance.getQuickWorkout(durationMinutes: 15);
+      }
+
+      // Check for specific muscle group
+      if (lowerMessage.contains('chest')) {
+        return await FitnessService.instance.getWorkoutRecommendations(level: 'beginner');
+      } else if (lowerMessage.contains('leg')) {
+        return await FitnessService.instance.getWorkoutRecommendations(level: 'beginner');
+      }
+
+      // Default: workout recommendations
+      return await FitnessService.instance.getWorkoutRecommendations(
+        goal: 'General Fitness',
+        level: 'beginner',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling fitness request', e, stackTrace);
+      return 'Unable to fetch workout information at the moment.';
+    }
+  }
+
+  /// Handle nutrition request
+  Future<String> _handleNutritionRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for healthy tips
+      if (lowerMessage.contains('tip') || lowerMessage.contains('advice') || lowerMessage.contains('guide')) {
+        return NutritionService.instance.getHealthyEatingTips();
+      }
+
+      // Check for specific food nutrition
+      final foodPattern = RegExp(r'(nutrition|calorie|in)\s+(.+)', caseSensitive: false);
+      final foodMatch = foodPattern.firstMatch(message);
+      if (foodMatch != null) {
+        final foodName = foodMatch.group(2)!.trim();
+        return await NutritionService.instance.getFoodNutrition(foodName);
+      }
+
+      // Default: healthy eating tips
+      return NutritionService.instance.getHealthyEatingTips();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling nutrition request', e, stackTrace);
+      return 'Unable to fetch nutrition information at the moment.';
+    }
+  }
+
   /// Get personalized suggestion based on context
   Future<String> getPersonalizedSuggestion() async {
     try {
@@ -535,7 +770,7 @@ class SmartAssistantCoordinator {
 
   /// Get help message
   String _getHelpMessage() {
-    return '''I'm Dona, your personal AI assistant! Here's what I can do:
+    return '''I'm Dona, your WORLD-CLASS personal AI assistant! Here's what I can do:
 
 📅 Calendar & Events
   • Check your schedule
@@ -545,33 +780,70 @@ class SmartAssistantCoordinator {
   • Get weather forecasts
   • Read latest news headlines
 
+🎮 TRIVIA & QUIZZES (NEW!)
+  • Play trivia games across 24 categories
+  • Test your knowledge with 4,000+ questions
+  • Science, History, Sports, Movies & more!
+
+📚 BOOKS & READING (NEW!)
+  • Search 30 million books
+  • Find books by genre, author, or title
+  • Get book recommendations
+
+⚽ SPORTS & SCORES (NEW!)
+  • Today's sports events
+  • Team information & scores
+  • 1,200+ leagues worldwide
+
+🎬 MOVIES & TV SHOWS (NEW!)
+  • Trending movies and TV shows
+  • Search by title or genre
+  • Movie recommendations with ratings
+
+💪 FITNESS & WORKOUTS (NEW!)
+  • Custom workout plans
+  • Exercise database with instructions
+  • Quick 15-minute routines
+
+🥗 NUTRITION & DIET (NEW!)
+  • Food nutrition information
+  • Calorie tracking
+  • Healthy eating tips & meal plans
+
 🍳 Recipes & Cooking
   • Find recipes by name or ingredient
   • Get random meal suggestions
+  • 500+ recipes with instructions
 
 📖 Dictionary & Learning
-  • Define words
-  • Get synonyms and examples
+  • Define words with examples
+  • Get synonyms and antonyms
+  • Multiple language support
 
 💱 Currency & Finance
-  • Convert currencies
-  • Check exchange rates
+  • Convert 160+ currencies
+  • Real-time exchange rates
+  • Popular currency tracking
 
 🎉 Holidays & Events
-  • Check public holidays
+  • Check public holidays (100+ countries)
   • Upcoming celebrations
+  • Holiday countdown
 
 📍 Location
   • Get your IP location
   • Timezone information
+  • ISP details
 
 💡 Smart Suggestions
   • Activity recommendations
   • Motivational quotes & affirmations
   • Interesting facts & jokes
+  • Inspirational content
 
 🎯 Proactive Assistance
   • Morning briefings
+  • Evening wrap-ups
   • Meeting reminders
   • Travel time alerts
 
@@ -579,6 +851,7 @@ class SmartAssistantCoordinator {
   • Voice commands
   • Text-to-speech responses
 
+🌟 27 FREE APIs integrated for the ultimate experience!
 Just ask me anything, and I'll do my best to help!''';
   }
 

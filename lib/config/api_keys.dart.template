@@ -106,6 +106,36 @@ class ApiKeys {
   static const String openWeatherApiKey = 'your-openweather-api-key-here';
   static const String openWeatherBaseUrl = 'https://api.openweathermap.org/data/2.5';
 
+  // ==================== Entertainment & Media APIs ====================
+
+  // TheSportsDB API - FREE with API key
+  // Get from: https://www.thesportsdb.com/api.php
+  // Free key: Use '3' for testing (limited features)
+  // Patreon key: More features and better access
+  static const String sportsDbApiKey = '3'; // Use your patreon key for full access
+
+  // The Movie Database (TMDb) API - FREE for non-commercial use
+  // Get from: https://www.themoviedb.org/settings/api
+  static const String tmdbApiKey = 'your-tmdb-api-key-here';
+  static const String tmdbBaseUrl = 'https://api.themoviedb.org/3';
+
+  // ==================== Learning & Entertainment APIs ====================
+
+  // Open Trivia Database - Completely FREE, NO API KEY REQUIRED!
+  // https://opentdb.com/ - 4,000+ trivia questions across 24 categories
+  // No configuration needed!
+
+  // Open Library API - Completely FREE, NO API KEY REQUIRED!
+  // https://openlibrary.org/ - 30+ million books
+  // No configuration needed!
+
+  // ==================== Fitness & Health APIs ====================
+
+  // API Ninjas - FREE tier available (multiple APIs in one key)
+  // Get from: https://api-ninjas.com/
+  // Includes: Nutrition API, Exercise API, and more
+  static const String apiNinjasKey = 'your-api-ninjas-key-here';
+
   // ==================== Firebase ====================
 
   // Firebase configuration is in google-services.json and GoogleService-Info.plist

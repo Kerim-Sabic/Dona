@@ -26,6 +26,12 @@ import 'services/location/ip_location_service.dart';
 import 'services/inspiration/inspiration_service.dart';
 import 'services/smart_assistant/smart_assistant_coordinator.dart';
 import 'data/user_profile.dart';
+import 'services/trivia/trivia_service.dart';
+import 'services/books/books_service.dart';
+import 'services/sports/sports_service.dart';
+import 'services/movies/movies_service.dart';
+import 'services/fitness/fitness_service.dart';
+import 'services/nutrition/nutrition_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +104,17 @@ Future<void> _initializeServices() async {
       InspirationService.instance.init(),
     ]);
 
+    // 8.5. Initialize WORLD-CLASS Entertainment & Learning Services (in parallel)
+    AppLogger.info('🌟 Initializing WORLD-CLASS services...');
+    await Future.wait([
+      TriviaService.instance.init(),
+      BooksService.instance.init(),
+      SportsService.instance.init(),
+      MoviesService.instance.init(),
+      FitnessService.instance.init(),
+      NutritionService.instance.init(),
+    ]);
+
     // 9. Initialize Speech Service (may fail on some devices - non-critical)
     AppLogger.info('🗣️ Initializing speech service...');
     try {
@@ -119,14 +136,20 @@ Future<void> _initializeServices() async {
     AppLogger.info('✅ ALL SERVICES INITIALIZED SUCCESSFULLY!');
     AppLogger.info('✅ ======================================');
     AppLogger.info('');
-    AppLogger.info('🎉 Dona AI is ready to be your perfect assistant!');
+    AppLogger.info('🎉 Dona AI is ready to be THE WORLD-CLASS #1 assistant!');
     AppLogger.info('');
     AppLogger.info('📊 Service Summary:');
-    AppLogger.info('   • 15 Core Services Active');
-    AppLogger.info('   • 21 FREE APIs Integrated');
+    AppLogger.info('   • 21 Core Services Active');
+    AppLogger.info('   • 27 FREE APIs Integrated');
     AppLogger.info('   • AI-Powered Intelligence');
     AppLogger.info('   • Voice Control Ready');
     AppLogger.info('   • Proactive Assistance Active');
+    AppLogger.info('   • 🎮 Trivia & Quizzes (4,000+ questions)');
+    AppLogger.info('   • 📚 Books (30 million titles)');
+    AppLogger.info('   • ⚽ Sports (1,200+ leagues)');
+    AppLogger.info('   • 🎬 Movies & TV Shows');
+    AppLogger.info('   • 💪 Fitness & Workouts');
+    AppLogger.info('   • 🥗 Nutrition & Diet');
     AppLogger.info('');
   } catch (e, stackTrace) {
     AppLogger.error('❌ Failed to initialize services', e, stackTrace);
