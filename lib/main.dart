@@ -41,6 +41,11 @@ import 'services/travel/travel_transportation_service.dart';
 import 'services/context/context_memory_service.dart';
 import 'services/audit/audit_log_service.dart';
 import 'services/photos/photo_gallery_service.dart';
+import 'services/cat_facts/cat_facts_service.dart';
+import 'services/dad_jokes/dad_jokes_service.dart';
+import 'services/astronomy/astronomy_service.dart';
+import 'services/cocktails/cocktails_service.dart';
+import 'services/random_user/random_user_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +105,8 @@ Future<void> _initializeServices() async {
       ActivityService.instance.init(),
       AdviceService.instance.init(),
       AffirmationsService.instance.init(),
+      CatFactsService.instance.init(),
+      DadJokesService.instance.init(),
     ]);
 
     // 8. Initialize NEW Utility Services (in parallel)
@@ -111,6 +118,9 @@ Future<void> _initializeServices() async {
       CurrencyService.instance.init(),
       IPLocationService.instance.init(),
       InspirationService.instance.init(),
+      CocktailsService.instance.init(),
+      AstronomyService.instance.init(),
+      RandomUserService.instance.init(),
     ]);
 
     // 8.5. Initialize WORLD-CLASS Entertainment & Learning Services (in parallel)
@@ -163,8 +173,8 @@ Future<void> _initializeServices() async {
     AppLogger.info('🎉 Dona AI is ready to be THE WORLD-CLASS #1 assistant!');
     AppLogger.info('');
     AppLogger.info('📊 Service Summary:');
-    AppLogger.info('   • 31 Core Services Active');
-    AppLogger.info('   • 28 FREE APIs Integrated');
+    AppLogger.info('   • 36 Core Services Active');
+    AppLogger.info('   • 33+ FREE APIs Integrated');
     AppLogger.info('   • AI-Powered Intelligence');
     AppLogger.info('   • Voice Control Ready');
     AppLogger.info('   • Proactive Assistance Active');
@@ -181,6 +191,10 @@ Future<void> _initializeServices() async {
     AppLogger.info('   • 🎵 Music Control');
     AppLogger.info('   • ✈️ Travel & Transportation');
     AppLogger.info('   • 📸 Photo & Gallery Management');
+    AppLogger.info('   • 🐱 Cat Facts & Dad Jokes');
+    AppLogger.info('   • 🌌 NASA Astronomy Pictures');
+    AppLogger.info('   • 🍹 Cocktails & Drink Recipes');
+    AppLogger.info('   • 👤 Random User Generator');
     AppLogger.info('');
   } catch (e, stackTrace) {
     AppLogger.error('❌ Failed to initialize services', e, stackTrace);

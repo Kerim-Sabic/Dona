@@ -33,6 +33,11 @@ import '../tasks/tasks_reminders_service.dart';
 import '../music/music_control_service.dart';
 import '../travel/travel_transportation_service.dart';
 import '../photos/photo_gallery_service.dart';
+import '../cat_facts/cat_facts_service.dart';
+import '../dad_jokes/dad_jokes_service.dart';
+import '../astronomy/astronomy_service.dart';
+import '../cocktails/cocktails_service.dart';
+import '../random_user/random_user_service.dart';
 
 /// Smart Assistant Coordinator
 ///
@@ -176,6 +181,35 @@ class SmartAssistantCoordinator {
       if (lowerMessage.contains('photo') || lowerMessage.contains('picture') || lowerMessage.contains('gallery') ||
           lowerMessage.contains('album') || lowerMessage.contains('favorite') && lowerMessage.contains('photo')) {
         return await _handlePhotoRequest(message);
+      }
+
+      // CAT FACTS
+      if (lowerMessage.contains('cat fact') || lowerMessage.contains('tell me about cat')) {
+        return await CatFactsService.instance.getCatFactSummary();
+      }
+
+      // DAD JOKES
+      if (lowerMessage.contains('dad joke')) {
+        return await DadJokesService.instance.getDadJokeSummary();
+      }
+
+      // ASTRONOMY
+      if (lowerMessage.contains('astronomy') || lowerMessage.contains('space picture') ||
+          lowerMessage.contains('nasa picture') || lowerMessage.contains('picture of the day')) {
+        return await AstronomyService.instance.getAstronomySummary();
+      }
+
+      // COCKTAILS
+      if (lowerMessage.contains('cocktail') || lowerMessage.contains('drink recipe') ||
+          lowerMessage.contains('how to make') && (lowerMessage.contains('martini') ||
+          lowerMessage.contains('margarita') || lowerMessage.contains('mojito'))) {
+        return await _handleCocktailRequest(message);
+      }
+
+      // RANDOM USER
+      if (lowerMessage.contains('random user') || lowerMessage.contains('generate user') ||
+          lowerMessage.contains('test user')) {
+        return await RandomUserService.instance.getUserSummary();
       }
 
       // CALCULATOR & UNIT CONVERSION
@@ -1438,6 +1472,48 @@ class SmartAssistantCoordinator {
     }
   }
 
+  /// Handle cocktail request
+  Future<String> _handleCocktailRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Extract cocktail name if specified
+      String? cocktailName;
+
+      if (lowerMessage.contains('how to make')) {
+        cocktailName = message
+            .replaceAll(RegExp(r'how to make (a |the )?', caseSensitive: false), '')
+            .trim();
+      } else if (lowerMessage.contains('cocktail')) {
+        // Check if specific cocktail mentioned
+        final commonCocktails = [
+          'margarita',
+          'martini',
+          'mojito',
+          'cosmopolitan',
+          'old fashioned',
+          'manhattan',
+          'daiquiri',
+          'bloody mary',
+          'whiskey sour',
+          'mai tai'
+        ];
+
+        for (final name in commonCocktails) {
+          if (lowerMessage.contains(name)) {
+            cocktailName = name;
+            break;
+          }
+        }
+      }
+
+      return await CocktailsService.instance.getCocktailSummary(cocktailName);
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling cocktail request', e, stackTrace);
+      return 'Unable to fetch cocktail recipe. Try: "How to make a Margarita" or "Random cocktail"';
+    }
+  }
+
   /// Get personalized suggestion based on context
   Future<String> getPersonalizedSuggestion() async {
     try {
@@ -1689,6 +1765,34 @@ class SmartAssistantCoordinator {
   • Timezone information
   • ISP details
 
+🐱 CAT FACTS (NEW!)
+  • Fun and interesting cat facts
+  • Learn about feline friends
+  • FREE - No API key needed
+
+👨 DAD JOKES (NEW!)
+  • Family-friendly dad jokes
+  • Wholesome humor
+  • FREE - No API key needed
+
+🌌 ASTRONOMY (NEW!)
+  • NASA's Picture of the Day
+  • Space exploration
+  • Daily astronomy content
+  • FREE - NASA APOD API
+
+🍹 COCKTAILS & DRINKS (NEW!)
+  • 600+ cocktail recipes
+  • Alcoholic & non-alcoholic
+  • Ingredients and instructions
+  • FREE - TheCocktailDB API
+
+👤 RANDOM USER GENERATOR (NEW!)
+  • Generate realistic user profiles
+  • Testing and demo data
+  • Multiple countries supported
+  • FREE - RandomUser.me API
+
 💡 Smart Suggestions
   • Activity recommendations
   • Motivational quotes & affirmations
@@ -1705,7 +1809,7 @@ class SmartAssistantCoordinator {
   • Voice commands
   • Text-to-speech responses
 
-🌟 31 Services & 28+ FREE APIs integrated for the ultimate experience!
+🌟 36 Services & 33+ FREE APIs integrated for the ultimate experience!
 Just ask me anything, and I'll do my best to help!''';
   }
 
