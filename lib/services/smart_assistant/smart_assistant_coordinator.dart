@@ -26,6 +26,9 @@ import '../sports/sports_service.dart';
 import '../movies/movies_service.dart';
 import '../fitness/fitness_service.dart';
 import '../nutrition/nutrition_service.dart';
+import '../sleep/sleep_service.dart';
+import '../calculator/calculator_service.dart';
+import '../translation/translation_service.dart';
 
 /// Smart Assistant Coordinator
 ///
@@ -76,6 +79,9 @@ class SmartAssistantCoordinator {
         MoviesService.instance.init(),
         FitnessService.instance.init(),
         NutritionService.instance.init(),
+        SleepService.instance.init(),
+        CalculatorService.instance.init(),
+        TranslationService.instance.init(),
       ]);
 
       // Start proactive monitoring
@@ -133,6 +139,31 @@ class SmartAssistantCoordinator {
       if (lowerMessage.contains('nutrition') || lowerMessage.contains('calorie') || lowerMessage.contains('diet') ||
           lowerMessage.contains('healthy eat')) {
         return await _handleNutritionRequest(message);
+      }
+
+      // SLEEP & WELLNESS
+      if (lowerMessage.contains('sleep') || lowerMessage.contains('alarm') || lowerMessage.contains('wake') ||
+          lowerMessage.contains('rest') || lowerMessage.contains('bedtime')) {
+        return await _handleSleepRequest(message);
+      }
+
+      // CALCULATOR & UNIT CONVERSION
+      if ((lowerMessage.contains('calculate') || lowerMessage.contains('what is') ||
+          lowerMessage.contains('how much is') || RegExp(r'\d+\s*[\+\-\*\/\^]\s*\d+').hasMatch(message)) &&
+          !lowerMessage.contains('translate')) {
+        return await _handleCalculatorRequest(message);
+      }
+
+      // TRANSLATION
+      if (lowerMessage.contains('translate') || lowerMessage.contains('in spanish') ||
+          lowerMessage.contains('in french') || lowerMessage.contains('in german') ||
+          lowerMessage.contains('what is') && (lowerMessage.contains('in ') || lowerMessage.contains(' to '))) {
+        return await _handleTranslationRequest(message);
+      }
+
+      // Unit conversion (separate from calculator if no translate keyword)
+      if (lowerMessage.contains('convert') && !lowerMessage.contains('translate')) {
+        return await _handleCalculatorRequest(message);
       }
 
       // RECIPES & COOKING
@@ -634,6 +665,247 @@ class SmartAssistantCoordinator {
     }
   }
 
+  /// Handle sleep & wellness request
+  Future<String> _handleSleepRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Set smart alarm
+      if (lowerMessage.contains('set') && lowerMessage.contains('alarm')) {
+        // Parse alarm time window
+        final timePattern = RegExp(r'(\d{1,2}):?(\d{2})?\s*(am|pm)?', caseSensitive: false);
+        final matches = timePattern.allMatches(message).toList();
+
+        if (matches.length >= 2) {
+          // Extract earliest and latest wake times
+          final now = DateTime.now();
+          final tomorrow = now.add(const Duration(days: 1));
+
+          // Parse first time (earliest)
+          final firstMatch = matches[0];
+          var hour1 = int.parse(firstMatch.group(1)!);
+          final minute1 = firstMatch.group(2) != null ? int.parse(firstMatch.group(2)!) : 0;
+          final period1 = firstMatch.group(3)?.toLowerCase();
+          if (period1 == 'pm' && hour1 < 12) hour1 += 12;
+          if (period1 == 'am' && hour1 == 12) hour1 = 0;
+
+          // Parse second time (latest)
+          final secondMatch = matches[1];
+          var hour2 = int.parse(secondMatch.group(1)!);
+          final minute2 = secondMatch.group(2) != null ? int.parse(secondMatch.group(2)!) : 0;
+          final period2 = secondMatch.group(3)?.toLowerCase();
+          if (period2 == 'pm' && hour2 < 12) hour2 += 12;
+          if (period2 == 'am' && hour2 == 12) hour2 = 0;
+
+          final earliestWake = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, hour1, minute1);
+          final latestWake = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, hour2, minute2);
+
+          final alarm = await SleepService.instance.createSmartAlarm(
+            earliestWake: earliestWake,
+            latestWake: latestWake,
+            label: 'Smart wake',
+          );
+
+          return 'Okay! I\'ll wake you between ${_formatTime(alarm.earliestWake)} and ${_formatTime(alarm.latestWake)}.\n'
+              '🎯 Optimal wake time: ${alarm.optimalWakeTime != null ? _formatTime(alarm.optimalWakeTime!) : "Calculating..."}\n\n'
+              'Your alarm is now active. Sweet dreams! 😴';
+        } else if (matches.length == 1) {
+          // Single time provided - use 30 minute window
+          final match = matches[0];
+          var hour = int.parse(match.group(1)!);
+          final minute = match.group(2) != null ? int.parse(match.group(2)!) : 0;
+          final period = match.group(3)?.toLowerCase();
+          if (period == 'pm' && hour < 12) hour += 12;
+          if (period == 'am' && hour == 12) hour = 0;
+
+          final now = DateTime.now();
+          final tomorrow = now.add(const Duration(days: 1));
+          final targetTime = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, hour, minute);
+          final earliestWake = targetTime.subtract(const Duration(minutes: 15));
+          final latestWake = targetTime.add(const Duration(minutes: 15));
+
+          final alarm = await SleepService.instance.createSmartAlarm(
+            earliestWake: earliestWake,
+            latestWake: latestWake,
+            label: 'Smart wake',
+          );
+
+          return 'Alarm set! I\'ll wake you around ${_formatTime(targetTime)} (between ${_formatTime(earliestWake)} and ${_formatTime(latestWake)}).\n'
+              '🎯 Optimal wake time: ${alarm.optimalWakeTime != null ? _formatTime(alarm.optimalWakeTime!) : "Calculating..."}\n\n'
+              'Sleep well! 😴';
+        }
+
+        return 'Please specify a time range, like "Set alarm between 6:30 and 7:00 AM"';
+      }
+
+      // Sleep analysis/summary
+      if (lowerMessage.contains('how') && (lowerMessage.contains('slept') || lowerMessage.contains('sleep'))) {
+        return await SleepService.instance.getSleepAnalysis();
+      }
+
+      // Sleep tips
+      if (lowerMessage.contains('tip') || lowerMessage.contains('advice') || lowerMessage.contains('help')) {
+        return SleepService.instance.getWellnessTips();
+      }
+
+      // Show alarms
+      if (lowerMessage.contains('show') && lowerMessage.contains('alarm')) {
+        final alarms = SleepService.instance.getActiveAlarms();
+        if (alarms.isEmpty) {
+          return 'You don\'t have any active alarms. Say "Set alarm between 6:30 and 7:00 AM" to create one.';
+        }
+
+        final buffer = StringBuffer('⏰ Your Active Alarms:\n\n');
+        for (var i = 0; i < alarms.length; i++) {
+          buffer.writeln('${i + 1}. ${SleepService.instance.formatAlarm(alarms[i])}\n');
+        }
+        return buffer.toString();
+      }
+
+      // Default: sleep analysis
+      return await SleepService.instance.getSleepAnalysis();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling sleep request', e, stackTrace);
+      return 'Unable to process sleep request at the moment.';
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  /// Handle calculator & unit conversion request
+  Future<String> _handleCalculatorRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for unit conversion
+      if (lowerMessage.contains('convert') || lowerMessage.contains('to')) {
+        // Parse conversion request: "convert X Y to Z" or "X Y to Z"
+        final conversionPattern = RegExp(
+          r'(\d+\.?\d*)\s*([a-zA-Z]+)\s+(?:to|in)\s+([a-zA-Z]+)',
+          caseSensitive: false,
+        );
+        final match = conversionPattern.firstMatch(message);
+
+        if (match != null) {
+          final value = double.parse(match.group(1)!);
+          final fromUnit = match.group(2)!;
+          final toUnit = match.group(3)!;
+
+          final result = CalculatorService.instance.convertUnits(
+            value: value,
+            fromUnit: fromUnit,
+            toUnit: toUnit,
+          );
+
+          if (result != null) {
+            return '🔄 Unit Conversion:\n\n${result.value} ${result.fromUnit} = ${result.formattedResult} ${result.toUnit}';
+          } else {
+            return 'I couldn\'t convert "$fromUnit" to "$toUnit". ${CalculatorService.instance.getUnitConverterHelp()}';
+          }
+        }
+
+        // Fallback: Show conversion help
+        return CalculatorService.instance.getUnitConverterHelp();
+      }
+
+      // Mathematical calculation
+      // Extract mathematical expression
+      var expression = message
+          .replaceAll(RegExp(r'calculate|what is|how much is|equals?', caseSensitive: false), '')
+          .trim();
+
+      // Remove question mark
+      expression = expression.replaceAll('?', '');
+
+      if (expression.isEmpty) {
+        return CalculatorService.instance.getCalculatorHelp();
+      }
+
+      final result = CalculatorService.instance.calculate(expression);
+
+      if (result != null) {
+        return '🔢 Calculation:\n\n${result.expression} = ${result.formattedResult}';
+      } else {
+        return 'I couldn\'t calculate that expression. ${CalculatorService.instance.getCalculatorHelp()}';
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling calculator request', e, stackTrace);
+      return 'Unable to process calculation. Try: "Calculate 5 + 3" or "Convert 10 km to miles"';
+    }
+  }
+
+  /// Handle translation request
+  Future<String> _handleTranslationRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Check for "show supported languages"
+      if (lowerMessage.contains('show') && lowerMessage.contains('language')) {
+        return TranslationService.instance.getSupportedLanguages();
+      }
+
+      // Parse translation request: "translate X to Y" or "what is X in Y"
+      var translationPattern = RegExp(
+        r'translate\s+(.+?)\s+to\s+([a-zA-Z]+)',
+        caseSensitive: false,
+      );
+      var match = translationPattern.firstMatch(message);
+
+      if (match != null) {
+        final text = match.group(1)!.trim();
+        final targetLang = match.group(2)!.trim();
+
+        return await TranslationService.instance.quickTranslate(
+          text: text,
+          targetLanguage: targetLang,
+        );
+      }
+
+      // Alternative pattern: "what is X in Y"
+      translationPattern = RegExp(
+        r'what\s+is\s+(.+?)\s+in\s+([a-zA-Z]+)',
+        caseSensitive: false,
+      );
+      match = translationPattern.firstMatch(message);
+
+      if (match != null) {
+        final text = match.group(1)!.trim();
+        final targetLang = match.group(2)!.trim();
+
+        return await TranslationService.instance.quickTranslate(
+          text: text,
+          targetLanguage: targetLang,
+        );
+      }
+
+      // Check for "translate X in Spanish/French/etc"
+      for (final lang in TranslationService.supportedLanguages) {
+        if (lowerMessage.contains('in ${lang.name.toLowerCase()}')) {
+          final text = message
+              .replaceAll(RegExp('translate|in ${lang.name}', caseSensitive: false), '')
+              .trim();
+
+          if (text.isNotEmpty) {
+            return await TranslationService.instance.quickTranslate(
+              text: text,
+              targetLanguage: lang.code,
+            );
+          }
+        }
+      }
+
+      // Fallback: Show translation help
+      return TranslationService.instance.getTranslationHelp();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling translation request', e, stackTrace);
+      return 'Unable to translate. Try: "Translate hello to Spanish" or "What is goodbye in French"';
+    }
+  }
+
   /// Get personalized suggestion based on context
   Future<String> getPersonalizedSuggestion() async {
     try {
@@ -809,6 +1081,24 @@ class SmartAssistantCoordinator {
   • Food nutrition information
   • Calorie tracking
   • Healthy eating tips & meal plans
+
+😴 SLEEP & WELLNESS (NEW!)
+  • Smart alarm with optimal wake time
+  • Sleep quality analysis
+  • Wellness coaching & tips
+  • Bedtime routine suggestions
+
+🔢 CALCULATOR & CONVERTER (NEW!)
+  • Mathematical calculations
+  • Unit conversions (length, weight, temp, etc.)
+  • Scientific functions (sqrt, sin, cos, etc.)
+  • Convert between 50+ units
+
+🌐 TRANSLATION (NEW!)
+  • Translate between 50+ languages
+  • Automatic language detection
+  • No API key required!
+  • Popular languages: EN, ES, FR, DE, JA, KO, ZH, AR
 
 🍳 Recipes & Cooking
   • Find recipes by name or ingredient

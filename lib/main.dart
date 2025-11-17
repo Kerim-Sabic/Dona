@@ -32,6 +32,9 @@ import 'services/sports/sports_service.dart';
 import 'services/movies/movies_service.dart';
 import 'services/fitness/fitness_service.dart';
 import 'services/nutrition/nutrition_service.dart';
+import 'services/sleep/sleep_service.dart';
+import 'services/calculator/calculator_service.dart';
+import 'services/translation/translation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +116,9 @@ Future<void> _initializeServices() async {
       MoviesService.instance.init(),
       FitnessService.instance.init(),
       NutritionService.instance.init(),
+      SleepService.instance.init(),
+      CalculatorService.instance.init(),
+      TranslationService.instance.init(),
     ]);
 
     // 9. Initialize Speech Service (may fail on some devices - non-critical)
@@ -139,8 +145,8 @@ Future<void> _initializeServices() async {
     AppLogger.info('🎉 Dona AI is ready to be THE WORLD-CLASS #1 assistant!');
     AppLogger.info('');
     AppLogger.info('📊 Service Summary:');
-    AppLogger.info('   • 21 Core Services Active');
-    AppLogger.info('   • 27 FREE APIs Integrated');
+    AppLogger.info('   • 24 Core Services Active');
+    AppLogger.info('   • 28 FREE APIs Integrated');
     AppLogger.info('   • AI-Powered Intelligence');
     AppLogger.info('   • Voice Control Ready');
     AppLogger.info('   • Proactive Assistance Active');
@@ -150,6 +156,9 @@ Future<void> _initializeServices() async {
     AppLogger.info('   • 🎬 Movies & TV Shows');
     AppLogger.info('   • 💪 Fitness & Workouts');
     AppLogger.info('   • 🥗 Nutrition & Diet');
+    AppLogger.info('   • 😴 Sleep & Wellness');
+    AppLogger.info('   • 🔢 Calculator & Unit Converter');
+    AppLogger.info('   • 🌐 Translation (50+ languages)');
     AppLogger.info('');
   } catch (e, stackTrace) {
     AppLogger.error('❌ Failed to initialize services', e, stackTrace);

@@ -92,6 +92,9 @@ dependencies:
   device_info_plus: ^10.1.0
   package_info_plus: ^8.0.0
 
+  # Health & Fitness
+  health: ^10.2.0
+
   # Share & File Operations
   share_plus: ^9.0.0
   open_file: ^3.3.2
