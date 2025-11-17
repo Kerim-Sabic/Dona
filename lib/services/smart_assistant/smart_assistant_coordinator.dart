@@ -30,6 +30,9 @@ import '../sleep/sleep_service.dart';
 import '../calculator/calculator_service.dart';
 import '../translation/translation_service.dart';
 import '../tasks/tasks_reminders_service.dart';
+import '../music/music_control_service.dart';
+import '../travel/travel_transportation_service.dart';
+import '../photos/photo_gallery_service.dart';
 
 /// Smart Assistant Coordinator
 ///
@@ -146,6 +149,33 @@ class SmartAssistantCoordinator {
       if (lowerMessage.contains('sleep') || lowerMessage.contains('alarm') || lowerMessage.contains('wake') ||
           lowerMessage.contains('rest') || lowerMessage.contains('bedtime')) {
         return await _handleSleepRequest(message);
+      }
+
+      // TASKS & REMINDERS
+      if (lowerMessage.contains('task') || lowerMessage.contains('todo') || lowerMessage.contains('remind') ||
+          lowerMessage.contains('due') || lowerMessage.contains('add task') || lowerMessage.contains('create task') ||
+          lowerMessage.contains('my tasks') || lowerMessage.contains('show tasks')) {
+        return await _handleTasksRequest(message);
+      }
+
+      // MUSIC & PLAYBACK CONTROL
+      if (lowerMessage.contains('play') || lowerMessage.contains('pause') || lowerMessage.contains('music') ||
+          lowerMessage.contains('song') || lowerMessage.contains('spotify') || lowerMessage.contains('apple music') ||
+          lowerMessage.contains('skip') || lowerMessage.contains('next track') || lowerMessage.contains('volume')) {
+        return await _handleMusicRequest(message);
+      }
+
+      // TRAVEL & TRANSPORTATION
+      if (lowerMessage.contains('flight') || lowerMessage.contains('travel') || lowerMessage.contains('direction') ||
+          lowerMessage.contains('how to get') || lowerMessage.contains('transit') || lowerMessage.contains('trip') ||
+          lowerMessage.contains('destination') || lowerMessage.contains('visit')) {
+        return await _handleTravelRequest(message);
+      }
+
+      // PHOTOS & GALLERY
+      if (lowerMessage.contains('photo') || lowerMessage.contains('picture') || lowerMessage.contains('gallery') ||
+          lowerMessage.contains('album') || lowerMessage.contains('favorite') && lowerMessage.contains('photo')) {
+        return await _handlePhotoRequest(message);
       }
 
       // CALCULATOR & UNIT CONVERSION
@@ -907,6 +937,507 @@ class SmartAssistantCoordinator {
     }
   }
 
+  /// Handle tasks & reminders request
+  Future<String> _handleTasksRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Show all tasks
+      if (lowerMessage.contains('show') || lowerMessage.contains('list') || lowerMessage.contains('my tasks')) {
+        return await TasksRemindersService.instance.getTaskSummary();
+      }
+
+      // Show today's tasks
+      if (lowerMessage.contains('today')) {
+        final tasks = await TasksRemindersService.instance.getTasksDueToday();
+        if (tasks.isEmpty) {
+          return '✅ No tasks due today! You\'re all caught up.';
+        }
+
+        final buffer = StringBuffer('📅 Tasks Due Today (${tasks.length}):\n\n');
+        for (var i = 0; i < tasks.length; i++) {
+          buffer.writeln('${i + 1}. ${TasksRemindersService.instance.formatTask(tasks[i])}\n');
+        }
+        return buffer.toString();
+      }
+
+      // Show overdue tasks
+      if (lowerMessage.contains('overdue') || lowerMessage.contains('late')) {
+        final tasks = await TasksRemindersService.instance.getOverdueTasks();
+        if (tasks.isEmpty) {
+          return '✅ No overdue tasks! Great job staying on top of things.';
+        }
+
+        final buffer = StringBuffer('⚠️ Overdue Tasks (${tasks.length}):\n\n');
+        for (var i = 0; i < tasks.length; i++) {
+          buffer.writeln('${i + 1}. ${TasksRemindersService.instance.formatTask(tasks[i])}\n');
+        }
+        return buffer.toString();
+      }
+
+      // Create new task
+      if (lowerMessage.contains('create') || lowerMessage.contains('add') || lowerMessage.contains('new task')) {
+        // Parse task details
+        var taskTitle = message
+            .replaceAll(RegExp(r'(create|add|new)\s+(task|todo|reminder)', caseSensitive: false), '')
+            .trim();
+
+        // Remove common words
+        taskTitle = taskTitle.replaceAll(RegExp(r'^(to|a)\s+', caseSensitive: false), '');
+
+        if (taskTitle.isEmpty) {
+          return 'Please specify the task. Example: "Add task buy groceries tomorrow"';
+        }
+
+        // Parse due date
+        DateTime? dueDate;
+        TaskPriority priority = TaskPriority.medium;
+
+        if (lowerMessage.contains('tomorrow')) {
+          dueDate = DateTime.now().add(const Duration(days: 1));
+          taskTitle = taskTitle.replaceAll(RegExp(r'\s*tomorrow\s*', caseSensitive: false), '').trim();
+        } else if (lowerMessage.contains('today')) {
+          dueDate = DateTime.now();
+          taskTitle = taskTitle.replaceAll(RegExp(r'\s*today\s*', caseSensitive: false), '').trim();
+        } else if (lowerMessage.contains('next week')) {
+          dueDate = DateTime.now().add(const Duration(days: 7));
+          taskTitle = taskTitle.replaceAll(RegExp(r'\s*next week\s*', caseSensitive: false), '').trim();
+        }
+
+        // Parse priority
+        if (lowerMessage.contains('urgent') || lowerMessage.contains('important')) {
+          priority = TaskPriority.urgent;
+          taskTitle = taskTitle
+              .replaceAll(RegExp(r'\s*(urgent|important)\s*', caseSensitive: false), '')
+              .trim();
+        } else if (lowerMessage.contains('high priority')) {
+          priority = TaskPriority.high;
+          taskTitle = taskTitle.replaceAll(RegExp(r'\s*high priority\s*', caseSensitive: false), '').trim();
+        }
+
+        // Create the task
+        final task = await TasksRemindersService.instance.createTask(
+          title: taskTitle,
+          dueDate: dueDate,
+          priority: priority,
+        );
+
+        String response = '✅ Task created: "${task.title}"';
+        if (task.dueDate != null) {
+          if (task.isDueToday) {
+            response += '\n📅 Due: Today';
+          } else if (task.isDueTomorrow) {
+            response += '\n📅 Due: Tomorrow';
+          } else {
+            response += '\n📅 Due: ${_formatDate(task.dueDate!)}';
+          }
+        }
+        return response;
+      }
+
+      // Complete task
+      if (lowerMessage.contains('complete') || lowerMessage.contains('done') || lowerMessage.contains('finish')) {
+        return 'To complete a task, please say: "Complete task [task name]" or use the app interface.';
+      }
+
+      // Default: Show task summary
+      return await TasksRemindersService.instance.getTaskSummary();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling tasks request', e, stackTrace);
+      return 'Unable to process task request. Try: "Show my tasks" or "Add task buy groceries"';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = date.difference(now).inDays;
+
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    if (diff == -1) return 'Yesterday';
+    if (diff > 1 && diff < 7) return 'in $diff days';
+    if (diff < -1 && diff > -7) return '${-diff} days ago';
+
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  /// Handle music & playback control request
+  Future<String> _handleMusicRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Pause music
+      if (lowerMessage.contains('pause') || lowerMessage.contains('stop')) {
+        return await MusicControlService.instance.pause();
+      }
+
+      // Resume/Next/Previous
+      if (lowerMessage.contains('resume')) {
+        return await MusicControlService.instance.resume();
+      }
+      if (lowerMessage.contains('next') || lowerMessage.contains('skip')) {
+        return await MusicControlService.instance.next();
+      }
+      if (lowerMessage.contains('previous') || lowerMessage.contains('back')) {
+        return await MusicControlService.instance.previous();
+      }
+
+      // Volume control
+      if (lowerMessage.contains('volume')) {
+        final volumePattern = RegExp(r'(\d+)\s*%?');
+        final match = volumePattern.firstMatch(message);
+        if (match != null) {
+          final level = int.parse(match.group(1)!);
+          return await MusicControlService.instance.setVolume(level);
+        }
+        return 'Please specify volume level, e.g., "Set volume to 70"';
+      }
+
+      // Shuffle/Repeat
+      if (lowerMessage.contains('shuffle')) {
+        return await MusicControlService.instance.toggleShuffle();
+      }
+      if (lowerMessage.contains('repeat')) {
+        return await MusicControlService.instance.toggleRepeat();
+      }
+
+      // Play music (extract search query)
+      if (lowerMessage.contains('play')) {
+        var query = message
+            .replaceAll(RegExp(r'play|on spotify|on apple music', caseSensitive: false), '')
+            .trim();
+
+        // Detect service preference
+        String? service;
+        if (lowerMessage.contains('spotify')) {
+          service = 'spotify';
+        } else if (lowerMessage.contains('apple music')) {
+          service = 'apple_music';
+        }
+
+        if (query.isEmpty) {
+          return 'What would you like to play? Try: "Play Bohemian Rhapsody" or "Play chill music"';
+        }
+
+        return await MusicControlService.instance.play(query: query, service: service);
+      }
+
+      // Default: show current playing
+      return await MusicControlService.instance.getCurrentlyPlaying();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling music request', e, stackTrace);
+      return 'Unable to control music. Try: "Play Bohemian Rhapsody" or "Pause music"';
+    }
+  }
+
+  /// Handle travel & transportation request
+  Future<String> _handleTravelRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Flight status
+      if (lowerMessage.contains('flight')) {
+        final flightPattern = RegExp(r'([A-Z]{2}\d{1,4})', caseSensitive: false);
+        final match = flightPattern.firstMatch(message);
+
+        if (match != null) {
+          final flightNumber = match.group(1)!.toUpperCase();
+          final flightInfo = await TravelTransportationService.instance.getFlightStatus(flightNumber);
+
+          if (flightInfo != null) {
+            return '✈️ Flight ${flightInfo.flightNumber} (${flightInfo.airline})\n\n'
+                '🛫 Departure: ${flightInfo.departure ?? "N/A"}\n'
+                '   ${flightInfo.departureTime != null ? _formatTime(flightInfo.departureTime!) : "Time TBD"}\n\n'
+                '🛬 Arrival: ${flightInfo.arrival ?? "N/A"}\n'
+                '   ${flightInfo.arrivalTime != null ? _formatTime(flightInfo.arrivalTime!) : "Time TBD"}\n\n'
+                '📊 Status: ${flightInfo.status}';
+          } else {
+            return 'Flight information not found. Please check the flight number and try again.';
+          }
+        }
+
+        return 'Please provide a flight number, e.g., "Check flight AA1234"';
+      }
+
+      // Directions
+      if (lowerMessage.contains('direction') || lowerMessage.contains('how to get')) {
+        final dirPattern = RegExp(r'from\s+(.+?)\s+to\s+(.+)', caseSensitive: false);
+        var match = dirPattern.firstMatch(message);
+
+        if (match != null) {
+          final from = match.group(1)!.trim();
+          final to = match.group(2)!.trim();
+
+          // Detect transport mode
+          TransportMode mode = TransportMode.driving;
+          if (lowerMessage.contains('walk') || lowerMessage.contains('walking')) {
+            mode = TransportMode.walking;
+          } else if (lowerMessage.contains('bike') || lowerMessage.contains('cycling')) {
+            mode = TransportMode.bicycling;
+          } else if (lowerMessage.contains('transit') || lowerMessage.contains('bus') || lowerMessage.contains('train')) {
+            mode = TransportMode.transit;
+          }
+
+          return await TravelTransportationService.instance.getDirections(
+            from: from,
+            to: to,
+            mode: mode,
+          );
+        }
+
+        // Alternative pattern: "to X"
+        final toPattern = RegExp(r'to\s+(.+)', caseSensitive: false);
+        match = toPattern.firstMatch(message);
+        if (match != null) {
+          final destination = match.group(1)!.trim();
+          return await TravelTransportationService.instance.getDirections(
+            from: 'current location',
+            to: destination,
+          );
+        }
+
+        return 'Please specify origin and destination, e.g., "Directions from Paris to London"';
+      }
+
+      // Travel recommendations
+      if (lowerMessage.contains('recommend') || lowerMessage.contains('where to') || lowerMessage.contains('visit')) {
+        final recommendations = await TravelTransportationService.instance.getTravelRecommendations();
+
+        if (recommendations.isEmpty) {
+          return 'No travel recommendations available at the moment.';
+        }
+
+        final buffer = StringBuffer('✈️ Travel Recommendations:\n\n');
+        for (var i = 0; i < recommendations.length && i < 5; i++) {
+          final rec = recommendations[i];
+          buffer.writeln('${i + 1}. ${rec.destination}');
+          buffer.writeln('   ${rec.description}');
+          if (rec.bestTime != null) {
+            buffer.writeln('   🗓️ Best time: ${rec.bestTime}');
+          }
+          if (rec.rating != null) {
+            buffer.writeln('   ⭐ Rating: ${rec.rating}/5.0');
+          }
+          buffer.writeln();
+        }
+        return buffer.toString();
+      }
+
+      // Public transit
+      if (lowerMessage.contains('transit') || lowerMessage.contains('bus') || lowerMessage.contains('train')) {
+        final locationPattern = RegExp(r'in\s+(.+)', caseSensitive: false);
+        final match = locationPattern.firstMatch(message);
+
+        if (match != null) {
+          final location = match.group(1)!.trim();
+          return await TravelTransportationService.instance.getPublicTransit(location);
+        }
+
+        return await TravelTransportationService.instance.getPublicTransit('your city');
+      }
+
+      // Travel tips
+      if (lowerMessage.contains('tip') || lowerMessage.contains('advice')) {
+        String? destination;
+        final destPattern = RegExp(r'for\s+(.+)', caseSensitive: false);
+        final match = destPattern.firstMatch(message);
+        if (match != null) {
+          destination = match.group(1)!.trim();
+        }
+
+        return TravelTransportationService.instance.getTravelTips(destination);
+      }
+
+      // Nearby attractions
+      final nearbyPattern = RegExp(r'(near|in|around)\s+(.+)', caseSensitive: false);
+      final match = nearbyPattern.firstMatch(message);
+      if (match != null) {
+        final location = match.group(2)!.trim();
+        return await TravelTransportationService.instance.getNearbyAttractions(location);
+      }
+
+      // Default: Travel recommendations
+      return await TravelTransportationService.instance.getTravelTips();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling travel request', e, stackTrace);
+      return 'Unable to fetch travel information. Try: "Flight AA1234" or "Directions to Paris"';
+    }
+  }
+
+  /// Handle photo & gallery request
+  Future<String> _handlePhotoRequest(String message) async {
+    try {
+      final lowerMessage = message.toLowerCase();
+
+      // Show gallery summary
+      if (lowerMessage.contains('show') && (lowerMessage.contains('photo') || lowerMessage.contains('gallery'))) {
+        if (lowerMessage.contains('favorite')) {
+          final favorites = await PhotoGalleryService.instance.getFavoritePhotos();
+          if (favorites.isEmpty) {
+            return '⭐ You don\'t have any favorite photos yet. Mark photos as favorites to see them here!';
+          }
+
+          final buffer = StringBuffer('⭐ Favorite Photos (${favorites.length}):\n\n');
+          for (var i = 0; i < favorites.length && i < 10; i++) {
+            buffer.writeln('${i + 1}. ${favorites[i].name} (${favorites[i].formattedSize})');
+          }
+          return buffer.toString();
+        }
+
+        return await PhotoGalleryService.instance.getGallerySummary();
+      }
+
+      // Photos from time period
+      if (lowerMessage.contains('today')) {
+        final photos = await PhotoGalleryService.instance.getPhotosToday();
+        if (photos.isEmpty) {
+          return '📸 No photos taken today yet.';
+        }
+
+        final buffer = StringBuffer('📸 Photos from Today (${photos.length}):\n\n');
+        for (var i = 0; i < photos.length && i < 10; i++) {
+          buffer.writeln('${i + 1}. ${photos[i].name} (${_formatTime(photos[i].dateTime)})');
+        }
+        return buffer.toString();
+      }
+
+      if (lowerMessage.contains('this week')) {
+        final photos = await PhotoGalleryService.instance.getPhotosThisWeek();
+        if (photos.isEmpty) {
+          return '📸 No photos from this week.';
+        }
+
+        final buffer = StringBuffer('📸 Photos from This Week (${photos.length}):\n\n');
+        for (var i = 0; i < photos.length && i < 10; i++) {
+          buffer.writeln('${i + 1}. ${photos[i].name}');
+        }
+        return buffer.toString();
+      }
+
+      if (lowerMessage.contains('this month')) {
+        final photos = await PhotoGalleryService.instance.getPhotosThisMonth();
+        if (photos.isEmpty) {
+          return '📸 No photos from this month.';
+        }
+
+        final buffer = StringBuffer('📸 Photos from This Month (${photos.length}):\n\n');
+        for (var i = 0; i < photos.length && i < 10; i++) {
+          buffer.writeln('${i + 1}. ${photos[i].name}');
+        }
+        return buffer.toString();
+      }
+
+      // Show albums
+      if (lowerMessage.contains('show') && lowerMessage.contains('album')) {
+        final albums = await PhotoGalleryService.instance.getAllAlbums();
+        if (albums.isEmpty) {
+          return '📁 You don\'t have any albums yet. Create one by saying "Create album [name]"';
+        }
+
+        final buffer = StringBuffer('📁 Your Albums (${albums.length}):\n\n');
+        for (var i = 0; i < albums.length; i++) {
+          final album = albums[i];
+          final photoCount = (await PhotoGalleryService.instance.getPhotosByAlbum(album.id)).length;
+          buffer.writeln('${i + 1}. ${album.name} ($photoCount photos)');
+          if (album.description != null && album.description!.isNotEmpty) {
+            buffer.writeln('   ${album.description}');
+          }
+          buffer.writeln();
+        }
+        return buffer.toString();
+      }
+
+      // Create album
+      if (lowerMessage.contains('create') && lowerMessage.contains('album')) {
+        var albumName = message
+            .replaceAll(RegExp(r'create\s+album', caseSensitive: false), '')
+            .trim();
+
+        if (albumName.isEmpty) {
+          return 'Please provide an album name, e.g., "Create album Summer 2024"';
+        }
+
+        final album = await PhotoGalleryService.instance.createAlbum(name: albumName);
+        return '✅ Album "${album.name}" created successfully!';
+      }
+
+      // Photos in album
+      if (lowerMessage.contains('in') && lowerMessage.contains('album')) {
+        final albumPattern = RegExp(r'in\s+album\s+(.+)', caseSensitive: false);
+        final match = albumPattern.firstMatch(message);
+
+        if (match != null) {
+          final albumName = match.group(1)!.trim();
+          final albums = await PhotoGalleryService.instance.getAllAlbums();
+          final album = albums.where((a) => a.name.toLowerCase().contains(albumName.toLowerCase())).firstOrNull;
+
+          if (album == null) {
+            return 'Album "$albumName" not found. Say "Show albums" to see all albums.';
+          }
+
+          final photos = await PhotoGalleryService.instance.getPhotosByAlbum(album.id);
+          if (photos.isEmpty) {
+            return '📁 Album "${album.name}" is empty. Add photos to this album!';
+          }
+
+          final buffer = StringBuffer('📁 ${album.name} (${photos.length} photos):\n\n');
+          for (var i = 0; i < photos.length && i < 10; i++) {
+            buffer.writeln('${i + 1}. ${photos[i].name} (${photos[i].formattedSize})');
+          }
+          return buffer.toString();
+        }
+      }
+
+      // Search by tag
+      if (lowerMessage.contains('tag') || lowerMessage.contains('tagged')) {
+        final tagPattern = RegExp(r'tag(?:ged)?\s+(?:with\s+)?(.+)', caseSensitive: false);
+        final match = tagPattern.firstMatch(message);
+
+        if (match != null) {
+          final tagQuery = match.group(1)!.trim();
+          final photos = await PhotoGalleryService.instance.searchPhotosByTags([tagQuery]);
+
+          if (photos.isEmpty) {
+            return '🔍 No photos found with tag "$tagQuery"';
+          }
+
+          final buffer = StringBuffer('🏷️ Photos tagged "$tagQuery" (${photos.length}):\n\n');
+          for (var i = 0; i < photos.length && i < 10; i++) {
+            buffer.writeln('${i + 1}. ${photos[i].name}');
+          }
+          return buffer.toString();
+        }
+      }
+
+      // Search by location
+      if (lowerMessage.contains('in') && !lowerMessage.contains('album')) {
+        final locationPattern = RegExp(r'in\s+(.+)', caseSensitive: false);
+        final match = locationPattern.firstMatch(message);
+
+        if (match != null) {
+          final location = match.group(1)!.trim();
+          final photos = await PhotoGalleryService.instance.searchPhotosByLocation(location);
+
+          if (photos.isEmpty) {
+            return '🔍 No photos found in "$location"';
+          }
+
+          final buffer = StringBuffer('📍 Photos in $location (${photos.length}):\n\n');
+          for (var i = 0; i < photos.length && i < 10; i++) {
+            buffer.writeln('${i + 1}. ${photos[i].name}');
+          }
+          return buffer.toString();
+        }
+      }
+
+      // Default: Show gallery summary
+      return await PhotoGalleryService.instance.getGallerySummary();
+    } catch (e, stackTrace) {
+      AppLogger.error('Error handling photo request', e, stackTrace);
+      return 'Unable to access photo gallery. Try: "Show my photos" or "Show albums"';
+    }
+  }
+
   /// Get personalized suggestion based on context
   Future<String> getPersonalizedSuggestion() async {
     try {
@@ -1101,6 +1632,38 @@ class SmartAssistantCoordinator {
   • No API key required!
   • Popular languages: EN, ES, FR, DE, JA, KO, ZH, AR
 
+✅ TASKS & REMINDERS (NEW!)
+  • Create and manage tasks
+  • Set due dates and priorities
+  • Recurring tasks support
+  • Overdue task tracking
+  • Task lists and categories
+  • Google Tasks sync
+
+🎵 MUSIC & PLAYBACK CONTROL (NEW!)
+  • Play music on Spotify or Apple Music
+  • Pause, resume, skip tracks
+  • Volume control
+  • Shuffle and repeat modes
+  • Search for songs, artists, albums
+  • Playlist management
+
+✈️ TRAVEL & TRANSPORTATION (NEW!)
+  • Flight status tracking
+  • Directions and navigation
+  • Travel recommendations
+  • Public transit information
+  • Nearby attractions
+  • Travel tips and advice
+
+📸 PHOTO & GALLERY MANAGEMENT (NEW!)
+  • Organize photos in albums
+  • Search by tags, location, date
+  • Mark favorites
+  • View photos by time period
+  • Create and manage albums
+  • Photo metadata and details
+
 🍳 Recipes & Cooking
   • Find recipes by name or ingredient
   • Get random meal suggestions
@@ -1142,7 +1705,7 @@ class SmartAssistantCoordinator {
   • Voice commands
   • Text-to-speech responses
 
-🌟 27 FREE APIs integrated for the ultimate experience!
+🌟 31 Services & 28+ FREE APIs integrated for the ultimate experience!
 Just ask me anything, and I'll do my best to help!''';
   }
 

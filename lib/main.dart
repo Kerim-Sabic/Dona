@@ -35,6 +35,12 @@ import 'services/nutrition/nutrition_service.dart';
 import 'services/sleep/sleep_service.dart';
 import 'services/calculator/calculator_service.dart';
 import 'services/translation/translation_service.dart';
+import 'services/tasks/tasks_reminders_service.dart';
+import 'services/music/music_control_service.dart';
+import 'services/travel/travel_transportation_service.dart';
+import 'services/context/context_memory_service.dart';
+import 'services/audit/audit_log_service.dart';
+import 'services/photos/photo_gallery_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -119,7 +125,19 @@ Future<void> _initializeServices() async {
       SleepService.instance.init(),
       CalculatorService.instance.init(),
       TranslationService.instance.init(),
+      TasksRemindersService.instance.init(),
+      MusicControlService.instance.init(),
+      TravelTransportationService.instance.init(),
+      PhotoGalleryService.instance.init(),
     ]);
+
+    // 8.6. Initialize Context & Memory System
+    AppLogger.info('🧠 Initializing Context & Memory system...');
+    await ContextMemoryService.instance.init();
+
+    // 8.7. Initialize Audit Log System
+    AppLogger.info('📋 Initializing Audit Log system...');
+    await AuditLogService.instance.init();
 
     // 9. Initialize Speech Service (may fail on some devices - non-critical)
     AppLogger.info('🗣️ Initializing speech service...');
@@ -145,7 +163,7 @@ Future<void> _initializeServices() async {
     AppLogger.info('🎉 Dona AI is ready to be THE WORLD-CLASS #1 assistant!');
     AppLogger.info('');
     AppLogger.info('📊 Service Summary:');
-    AppLogger.info('   • 24 Core Services Active');
+    AppLogger.info('   • 31 Core Services Active');
     AppLogger.info('   • 28 FREE APIs Integrated');
     AppLogger.info('   • AI-Powered Intelligence');
     AppLogger.info('   • Voice Control Ready');
@@ -159,6 +177,10 @@ Future<void> _initializeServices() async {
     AppLogger.info('   • 😴 Sleep & Wellness');
     AppLogger.info('   • 🔢 Calculator & Unit Converter');
     AppLogger.info('   • 🌐 Translation (50+ languages)');
+    AppLogger.info('   • ✅ Tasks & Reminders');
+    AppLogger.info('   • 🎵 Music Control');
+    AppLogger.info('   • ✈️ Travel & Transportation');
+    AppLogger.info('   • 📸 Photo & Gallery Management');
     AppLogger.info('');
   } catch (e, stackTrace) {
     AppLogger.error('❌ Failed to initialize services', e, stackTrace);
