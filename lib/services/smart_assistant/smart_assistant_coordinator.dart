@@ -29,6 +29,7 @@ import '../nutrition/nutrition_service.dart';
 import '../sleep/sleep_service.dart';
 import '../calculator/calculator_service.dart';
 import '../translation/translation_service.dart';
+import '../tasks/tasks_reminders_service.dart';
 
 /// Smart Assistant Coordinator
 ///

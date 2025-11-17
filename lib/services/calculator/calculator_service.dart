@@ -301,7 +301,15 @@ class CalculatorService {
       if (i > 0 && (expr[i] == '*' || expr[i] == '/')) {
         final left = _parseExpression(expr.substring(0, i));
         final right = _parseExpression(expr.substring(i + 1));
-        return expr[i] == '*' ? left * right : left / right;
+        if (expr[i] == '*') {
+          return left * right;
+        } else {
+          // Check for division by zero
+          if (right == 0 || right.abs() < 0.0000001) {
+            throw FormatException('Division by zero');
+          }
+          return left / right;
+        }
       }
     }
 
