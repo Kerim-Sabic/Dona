@@ -1,0 +1,131 @@
+/// API Keys and Configuration for Dona AI
+///
+/// INSTRUCTIONS:
+/// 1. Copy this file and rename it to 'api_keys.dart'
+/// 2. Fill in your actual API keys below
+/// 3. NEVER commit api_keys.dart to version control (it's already in .gitignore)
+///
+/// To create api_keys.dart:
+/// cp lib/config/api_keys.dart.template lib/config/api_keys.dart
+
+class ApiKeys {
+  // ==================== AI Services ====================
+  static const String claudeApiKey = 'your-claude-api-key-here';
+  static const String openAiApiKey = 'your-openai-api-key-here';
+
+  // ==================== Google Cloud APIs ====================
+
+  // Google Cloud Speech-to-Text API
+  static const String googleCloudApiKey = 'your-google-cloud-api-key-here';
+
+  // Google Calendar OAuth 2.0
+  // Get these from: https://console.cloud.google.com/apis/credentials
+  static const String googleCalendarClientId = 'your-client-id.apps.googleusercontent.com';
+  static const String googleCalendarClientSecret = 'your-client-secret';
+  static const String googleCalendarRedirectUri = 'http://localhost:8080/auth/callback';
+  static const List<String> googleCalendarScopes = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.events',
+  ];
+
+  // Gmail API - uses same OAuth credentials as Calendar
+  static const String gmailClientId = 'your-client-id.apps.googleusercontent.com';
+  static const String gmailClientSecret = 'your-client-secret';
+  static const List<String> gmailScopes = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/gmail.compose',
+    'https://www.googleapis.com/auth/gmail.modify',
+  ];
+
+  // Google Tasks API
+  static const List<String> googleTasksScopes = [
+    'https://www.googleapis.com/auth/tasks',
+    'https://www.googleapis.com/auth/tasks.readonly',
+  ];
+
+  // Google Drive API
+  static const List<String> googleDriveScopes = [
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/drive.appdata',
+    'https://www.googleapis.com/auth/drive.metadata',
+  ];
+
+  // Combined Google OAuth Scopes (if you want all permissions at once)
+  static List<String> get allGoogleScopes => [
+        ...googleCalendarScopes,
+        ...gmailScopes,
+        ...googleTasksScopes,
+        ...googleDriveScopes,
+      ];
+
+  // ==================== Google Maps APIs ====================
+
+  // Get your API key from: https://console.cloud.google.com/google/maps-apis
+  // This single key works for all Google Maps services
+  static const String googleMapsApiKey = 'your-google-maps-api-key';
+
+  // Google Maps Services (all use the same API key):
+  // - Directions API
+  // - Air Quality API
+  // - Pollen API
+  // - Weather API
+  // - Maps SDK for Android
+  // - Maps SDK for iOS
+  // - Places API (New)
+  // - Routes API
+  // - Roads API
+  // - Navigation SDK
+
+  // ==================== Twilio ====================
+
+  // Get these from: https://console.twilio.com
+  static const String twilioAccountSid = 'your-twilio-account-sid';
+  static const String twilioAuthToken = 'your-twilio-auth-token';
+  static const String twilioPhoneNumber = '+1234567890'; // Your Twilio phone number
+
+  // ==================== News API ====================
+
+  // Get from: https://newsapi.org
+  static const String newsApiKey = 'your-news-api-key-here';
+  static const String newsBaseUrl = 'https://newsapi.org/v2';
+
+  // ==================== Weather API ====================
+
+  // Get from: https://openweathermap.org/api
+  static const String openWeatherApiKey = 'your-openweather-api-key-here';
+  static const String openWeatherBaseUrl = 'https://api.openweathermap.org/data/2.5';
+
+  // ==================== Firebase ====================
+
+  // Firebase configuration is in google-services.json and GoogleService-Info.plist
+}
+
+/// API Configuration
+class ApiConfig {
+  // Timeouts
+  static const Duration connectionTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 30);
+
+  // Default values
+  static const String defaultCity = 'Sarajevo';
+  static const String defaultCountry = 'ba'; // Bosnia and Herzegovina
+  static const String defaultLanguage = 'en';
+  static const String temperatureUnit = 'metric'; // Celsius
+
+  // API Base URLs
+  static const String googleApisBaseUrl = 'https://www.googleapis.com';
+  static const String googleMapsBaseUrl = 'https://maps.googleapis.com/maps/api';
+
+  // Google Maps API Endpoints
+  static String get directionsEndpoint => '$googleMapsBaseUrl/directions/json';
+  static String get placesEndpoint => '$googleMapsBaseUrl/place/nearbysearch/json';
+  static String get geocodingEndpoint => '$googleMapsBaseUrl/geocode/json';
+  static String get airQualityEndpoint => '$googleMapsBaseUrl/air-quality';
+  static String get pollenEndpoint => '$googleMapsBaseUrl/pollen';
+  static String get roadsEndpoint => '$googleMapsBaseUrl/roads/v1';
+
+  // Twilio API
+  static const String twilioBaseUrl = 'https://api.twilio.com/2010-04-01';
+}
